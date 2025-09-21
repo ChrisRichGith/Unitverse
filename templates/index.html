@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Kampfspiel</title>
+    <style>
+        body { font-family: sans-serif; display: flex; }
+        .board { border: 1px solid black; margin: 1em; padding: 1em; }
+        .slot { border: 1px solid #eee; min-height: 50px; min-width: 80px; }
+        .defeated { text-decoration: line-through; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <div class="player-area">
+        <h2>Spieler 1</h2>
+        <div class="board">
+            {% for r in range(3) %}
+                <div class="row">
+                {% for c in range(2) %}
+                    <div class="slot">
+                        {% set unit = game.player1.board[(r,c)] %}
+                        {% if unit %}
+                            <div class="{{ 'defeated' if unit.is_defeated else '' }}">
+                                <strong>{{ unit.name }}</strong><br>
+                                HP: {{ unit.hp }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="info-area">
+        <h2>Info</h2>
+        {% if game.game_state == 'combat' %}
+            <p>Am Zug: {{ game.get_current_attacker().name }}</p>
+            <form action="/next_turn" method="post">
+                <button type="submit">Nächste Runde</button>
+            </form>
+        {% else %}
+            <p>Spiel beendet!</p>
+            <form action="/new_game" method="post">
+                <button type="submit">Neues Spiel</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="player-area">
+        <h2>Spieler 2</h2>
+        <div class="board">
+            {% for r in range(3) %}
+                <div class="row">
+                {% for c in range(2) %}
+                    <div class="slot">
+                        {% set unit = game.player2.board[(r,c)] %}
+                        {% if unit %}
+                            <div class="{{ 'defeated' if unit.is_defeated else '' }}">
+                                <strong>{{ unit.name }}</strong><br>
+                                HP: {{ unit.hp }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
