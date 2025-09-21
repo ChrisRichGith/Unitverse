@@ -157,26 +157,32 @@ class Game:
         return (total_current_hp / total_max_hp) * 100
 
     def determine_winner(self):
-        """Determines the winner based on elimination or HP percentage after 20 rounds."""
+        """Determines the winner and stores a JSON-serializable representation."""
         p1_units_alive = any(not u.is_defeated for u in self.player1.units)
         p2_units_alive = any(not u.is_defeated for u in self.player2.units)
 
+        winner_obj = None
         if not p1_units_alive:
-            self.winner = self.player2
+            winner_obj = self.player2
         elif not p2_units_alive:
-            self.winner = self.player1
+            winner_obj = self.player1
         elif self.round_count >= 20:
             p1_hp_pct = self._calculate_total_hp_percentage(self.player1)
             p2_hp_pct = self._calculate_total_hp_percentage(self.player2)
-            self.combat_log.append("Rundenlimit erreicht! Der Gewinner wird durch die verbleibenden Lebenspunkte bestimmt.")
-            self.combat_log.append(f"{self.player1.name}: {p1_hp_pct:.2f}% HP | {self.player2.name}: {p2_hp_pct:.2f}% HP")
+
+            # This log message should be a dictionary too, for consistency
+            self.combat_log.append({'type': 'info', 'message': "Rundenlimit erreicht! Der Gewinner wird durch die verbleibenden Lebenspunkte bestimmt."})
+            self.combat_log.append({'type': 'info', 'message': f"{self.player1.name}: {p1_hp_pct:.2f}% HP | {self.player2.name}: {p2_hp_pct:.2f}% HP"})
 
             if p1_hp_pct > p2_hp_pct:
-                self.winner = self.player1
+                winner_obj = self.player1
             elif p2_hp_pct > p1_hp_pct:
-                self.winner = self.player2
+                winner_obj = self.player2
             else:
-                self.winner = "Unentschieden" # Draw
+                self.winner = "Unentschieden"
+
+        if winner_obj:
+            self.winner = {'name': winner_obj.name}
 
 # --- UNIT GENERATION ---
 UNIT_NAMES = ["Goblin", "Orc", "Elf", "Dwarf", "Knight", "Mage", "Rogue", "Golem"]
