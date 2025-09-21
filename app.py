@@ -66,43 +66,48 @@ class Game:
 
     def execute_turn(self):
         """
-        Executes a single attack for the current unit and returns a log string.
-        It does NOT advance the turn counter.
+        Executes a single attack for the current unit and returns a structured log entry.
         """
         if self.game_state != "combat":
-            return ""
+            return None
 
         attacker = self.get_current_attacker()
         if attacker.is_defeated:
-            return "" # Skip defeated units, the main loop will advance the turn
+            return None
 
         # Determine opponent
-        attacking_player = self.player1 if attacker in self.player1.units else self.player2
-        opponent_player = self.player2 if attacking_player is self.player1 else self.player1
+        opponent_player = self.player2 if attacker in self.player1.units else self.player1
 
-        # Find first available target, respecting rows (front-row protection)
+        # Find first available target
         target = None
-        for r in range(3): # Iterate rows 0, 1, 2
-            for c in range(2): # Iterate columns 0, 1
+        for r in range(3):
+            for c in range(2):
                 unit = opponent_player.board.get((r, c))
                 if unit and not unit.is_defeated:
                     target = unit
-                    break # Found a target in this row, stop searching columns
+                    break
             if target:
-                break # Found a target in this row, stop searching rows
+                break
 
         if target:
-            # Apply damage
             damage = attacker.attack
             target.hp -= damage
-            log_message = f"{attacker.name} greift {target.name} an und verursacht {damage} Schaden."
             if target.hp <= 0:
                 target.hp = 0
                 target.is_defeated = True
-                log_message += f" {target.name} wurde besiegt!"
-            return log_message
 
-        return f"{attacker.name} hat kein Ziel gefunden."
+            return {
+                'type': 'attack',
+                'attacker_id': attacker.id,
+                'attacker_name': attacker.name,
+                'target_id': target.id,
+                'target_name': target.name,
+                'damage': damage,
+                'target_hp_after': target.hp,
+                'defeated': target.is_defeated
+            }
+
+        return {'type': 'info', 'message': f"{attacker.name} hat kein Ziel gefunden."}
 
     def check_game_over(self):
         """Checks if all units of a player are defeated."""
@@ -122,21 +127,19 @@ class Game:
 
         while self.round_count < 20:
             self.round_count += 1
-            self.combat_log.append(f"--- Runde {self.round_count} ---")
+            self.combat_log.append({'type': 'round', 'number': self.round_count})
 
             for i in range(len(self.turn_order)):
                 self.current_turn_index = i
-                log_entry = self.execute_turn()
-                if log_entry:
-                    self.combat_log.append(log_entry)
+                action = self.execute_turn()
+                if action:
+                    self.combat_log.append(action)
 
-                # Check for game over after every turn
                 if self.check_game_over():
                     self.game_state = "finished"
                     self.determine_winner()
-                    return # Exit combat immediately
+                    return
 
-        # If loop finishes, game ends due to round limit
         self.game_state = "finished"
         self.determine_winner()
 
@@ -274,9 +277,12 @@ def buy_unit(unit_id):
 
 @app.route('/start_combat', methods=['POST'])
 def start_combat():
-    """Transitions the game from preparation to combat."""
+    """Runs the combat and renders the replay screen."""
     if game and game.game_state == "preparation":
+        # Run the simulation
         game.run_full_combat()
+        # Render the replay template with the results
+        return render_template('combat_replay.html', game=game, combat_log_json=game.combat_log)
     return redirect(url_for('index'))
 
 @app.route('/new_game', methods=['POST'])

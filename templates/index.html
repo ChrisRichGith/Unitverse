@@ -72,7 +72,8 @@
         </div>
     </div>
 
-    {% elif game.game_state == 'finished' %}
+    {% elif game.game_state == 'combat' %}
+    {# This state is no longer rendered directly, but we'll keep the block for future use #}
     <div class="game-container">
         <div class="player-area">
             <h2>Spieler 1</h2>
@@ -94,21 +95,8 @@
         </div>
 
     <div class="info-area">
-        <h2>Kampf beendet!</h2>
-        {% if game.winner == 'Unentschieden' %}
-            <h3>Ergebnis: Unentschieden!</h3>
-        {% else %}
-            <h3>Gewinner: {{ game.winner.name }}!</h3>
-        {% endif %}
-        <form action="/new_game" method="post">
-            <button type="submit" style="font-size: 1.2em; padding: 0.5em 1em;">Neues Spiel</button>
-        </form>
-        <div class="combat-log" style="text-align: left; margin-top: 1em; border: 1px solid #ccc; padding: 1em; height: 300px; overflow-y: scroll; background: #f8f8f8;">
-            <h4>Kampfprotokoll</h4>
-            {% for entry in game.combat_log %}
-                <p style="margin: 0.2em 0; font-size: 0.9em;">{{ entry }}</p>
-            {% endfor %}
-        </div>
+        <h2>Info</h2>
+        {# This section is now empty as combat is handled in the replay view #}
     </div>
 
     <div class="player-area">
@@ -121,7 +109,7 @@
                         {% if unit %}
                             <div class="{{ 'defeated' if unit.is_defeated else '' }}">
                                 <strong>{{ unit.name }}</strong><br>
-                                HP: {{ unit.hp }}
+                                HP: {{ unit.hp }}/{{ unit.max_hp }}
                             </div>
                         {% endif %}
                     </div>
