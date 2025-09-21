@@ -34,42 +34,53 @@
     </div>
 
     {% elif game.game_state == 'preparation' %}
-    <div class="prep-container">
-        <div class="player-info">
-            <h2>Vorbereitung</h2>
-            <p>Gold: {{ game.player1.gold }}</p>
-            <h3>Dein Team</h3>
-            <div class="board">
-            {% for r in range(3) %}
-                {% for c in range(2) %}
-                    <div class="slot">
-                        {% set unit = game.player1.board.get((r,c)) %}
-                        {% if unit %}
-                            <div><strong>{{ unit.name }}</strong></div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
+    <div class="prep-container" style="width: 100%; justify-content: space-evenly;">
+        <div class="barracks-panel" style="width: 25%;">
+            <h3>Kaserne</h3>
+            {% for unit in player1.barracks %}
+                <div class="unit-card">
+                    <strong>{{ unit.name }} (Lvl {{ unit.level }})</strong><br>
+                    HP:{{ unit.max_hp }}, Atk:{{ unit.attack }}<br>
+                    <form action="/deploy_unit/{{ unit.id }}" method="post">
+                        <button type="submit" {% if unit.id in game.deployed_barracks_units %}disabled{% endif %}>Einsetzen</button>
+                    </form>
+                </div>
             {% endfor %}
-            </div>
+            {% if not player1.barracks %} <p>Leer</p> {% endif %}
         </div>
-        <div class="shop">
-            <h2>Shop</h2>
-            {% for unit in game.shop_units %}
-            <div class="unit-card">
-                <strong>{{ unit.name }}</strong><br>
-                HP: {{ unit.hp }}, Atk: {{ unit.attack }}, Init: {{ unit.initiative }}<br>
-                Kosten: {{ unit.cost }} Gold<br>
-                <form action="/buy_unit/{{ unit.id }}" method="post">
-                    <button type="submit" {% if game.player1.gold < unit.cost %}disabled{% endif %}>Kaufen</button>
-                </form>
+
+        <div class="team-panel" style="width: 40%;">
+            <h2>Team-Zusammenstellung</h2>
+            <p>Gold: {{ player1.gold }}</p>
+            <div class="board">
+                {% for r in range(3) %}{% for c in range(2) %}
+                    <div class="slot">
+                    {% set unit = player1.board.get((r,c)) %}
+                    {% if unit %}
+                        <strong>{{ unit.name }}</strong>
+                    {% endif %}
+                    </div>
+                {% endfor %}{% endfor %}
             </div>
-            {% endfor %}
-            <hr>
-            <form action="/start_combat" method="post">
-                <button type="submit" style="font-size: 1.2em; padding: 0.5em 1em; background: #28a745; color: white;" {% if game.player1.units|length == 0 %}disabled{% endif %}>
+            <form action="/start_combat" method="post" style="margin-top: 1em;">
+                <button type="submit" style="font-size: 1.2em; padding: 0.5em 1em; background: #28a745; color: white;" {% if player1.units|length == 0 %}disabled{% endif %}>
                     Kampf starten
                 </button>
             </form>
+        </div>
+
+        <div class="shop-panel" style="width: 25%;">
+            <h3>Shop</h3>
+            {% for unit in game.shop_units %}
+            <div class="unit-card">
+                <strong>{{ unit.name }}</strong><br>
+                HP:{{ unit.hp }}, Atk:{{ unit.attack }}<br>
+                Kosten: {{ unit.cost }} Gold<br>
+                <form action="/buy_unit/{{ unit.id }}" method="post">
+                    <button type="submit" {% if player1.gold < unit.cost %}disabled{% endif %}>Kaufen</button>
+                </form>
+            </div>
+            {% endfor %}
         </div>
     </div>
 
