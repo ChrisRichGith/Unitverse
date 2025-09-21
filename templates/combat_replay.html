@@ -60,7 +60,7 @@
             </div>
 
             {% if game.survivors %}
-            <div class="survivors-area" style="margin-top: 2em;">
+            <div id="survivors-area" class="survivors-area" style="margin-top: 2em; display: none;">
                 <h4>Überlebende Einheiten</h4>
                 {% for unit in game.survivors %}
                 <div class="unit-card">
@@ -153,6 +153,12 @@
                 winnerH3.textContent = `Gewinner: ${winnerData.name}!`;
             }
             winnerDisplay.style.display = 'block';
+
+            // Show the survivors section
+            const survivorsArea = document.getElementById('survivors-area');
+            if (survivorsArea) {
+                survivorsArea.style.display = 'block';
+            }
         }
 
         // Auto-start the combat replay when the page loads

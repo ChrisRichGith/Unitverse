@@ -373,7 +373,8 @@ def move_to_barracks(unit_id):
                 p1.barracks.append(survivor_to_move)
                 save_data(players)
                 game.survivors.remove(survivor_to_move)
-    return render_template('combat_replay.html', game=game, combat_log_json=game.combat_log)
+    # After moving a unit, redirect to the barracks to see the result
+    return redirect(url_for('barracks'))
 
 def ai_manage_barracks(player, survivors):
     """Decides which survivors to keep in the barracks for the AI."""
