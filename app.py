@@ -275,37 +275,31 @@ def ai_select_team(player, shop_units):
     pc_shopping_ai(player, shop_units)
 
 def pc_shopping_ai(player, shop_units):
-    """A simple AI for the PC to buy and place units."""
+    """A simple AI for the PC to buy and place units. (Simplified for debugging)"""
     if not player.is_ai:
         return
 
-    can_afford_something = True
-    while can_afford_something:
-        can_afford_something = False
-        # Find the most expensive unit the AI can afford
-        best_buy = None
-        # Iterate over a copy of the list as we modify it
+    # Continue buying as long as there is gold and space
+    while player.find_first_available_slot() is not None:
+        bought_a_unit = False
+        # Iterate over a copy of the list as we might modify it
         for unit in list(shop_units):
             if player.gold >= unit.cost:
-                if best_buy is None or unit.cost > best_buy.cost:
-                    best_buy = unit
+                slot = player.find_first_available_slot()
+                if not slot: break # Should not happen due to while loop, but for safety
 
-        if best_buy:
-            can_afford_something = True
-            # Buy the unit
-            slot = player.find_first_available_slot()
-            if slot:
-                player.gold -= best_buy.cost
-                player.units.append(best_buy)
-                player.place_unit(best_buy, slot)
-                shop_units.remove(best_buy)
-                # Replenish the shop so the AI has fresh options
+                # Buy the first affordable unit
+                player.gold -= unit.cost
+                player.units.append(unit)
+                player.place_unit(unit, slot)
+                shop_units.remove(unit)
                 shop_units.append(generate_random_unit())
-            else:
-                # No space left on board
-                break
-        else:
-            # Can't afford anything that's left
+
+                bought_a_unit = True
+                break # Break from the for loop to restart the buying process
+
+        # If we went through the whole shop and couldn't afford anything, stop.
+        if not bought_a_unit:
             break
 
 @app.route('/start_game', methods=['POST'])
