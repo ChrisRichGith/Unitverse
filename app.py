@@ -52,6 +52,10 @@ class Unit:
 
     @classmethod
     def from_dict(cls, data):
+        # Handle old save data that doesn't have the new attribute structure
+        if "attributes" not in data or not data["attributes"]:
+            return None
+
         return Unit(
             attributes=data.get("attributes"),
             level=data.get("level", 1),
@@ -182,7 +186,10 @@ def load_data():
         try:
             data = json.load(f)
             player = Player(name=data.get("name", "Spieler 1"))
-            player.barracks = [Unit.from_dict(u_data) for u_data in data.get("barracks", [])]
+            # Create units from data, which might return None for incompatible old data
+            loaded_units = [Unit.from_dict(u_data) for u_data in data.get("barracks", [])]
+            # Filter out any None values to keep the barracks clean
+            player.barracks = [unit for unit in loaded_units if unit is not None]
             return player
         except (json.JSONDecodeError, KeyError):
             return None
