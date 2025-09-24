@@ -168,6 +168,11 @@ game = Game()
 
 @app.route('/')
 def index():
+    global game
+    # If a game has just finished, reset the global game object to show the title screen
+    if game.game_state == "finished":
+        game = Game()
+
     # Logic to check if save file exists for enabling/disabling "Spiel laden"
     save_exists = os.path.exists("game_data.json")
     return render_template('index.html', game=game, save_exists=save_exists)
