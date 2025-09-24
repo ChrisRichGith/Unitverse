@@ -70,7 +70,9 @@
             {% endfor %}
         {% endif %}
         <br>
-        <a href="{{ url_for('index') }}" style="margin-top: 1em; display: inline-block;">Zurück zum Hauptmenü</a>
+        <form action="{{ url_for('start_game') }}" method="post" style="margin-top: 1em;">
+            <button type="submit" style="font-size: 1.1em; background-color: #007bff; color: white;">Nächste Runde</button>
+        </form>
     </div>
 
     <script>
