@@ -17,6 +17,7 @@
         .shielding { border: 2px solid #007bff; box-shadow: 0 0 5px #007bff; }
         .frenzy { border: 2px solid #dc3545; box-shadow: 0 0 5px #dc3545; }
         .buffed { border: 2px solid #ffc107; box-shadow: 0 0 5px #ffc107; }
+        .hidden { opacity: 0.5; border-style: dashed; }
         #opponent-board { transform: rotate(180deg); }
         #opponent-board .unit-slot { transform: rotate(180deg); } /* Rotate content back */
     </style>
@@ -173,6 +174,14 @@
                         unitSlot.classList.remove(cssClass);
                     }
                 }
+            } else if (step.type === 'hide') {
+                p.textContent = `${step.actor_name} versteckt sich in den Schatten!`;
+                const actorSlot = document.getElementById(step.actor_id);
+                if (actorSlot) actorSlot.classList.add('hidden');
+            } else if (step.type === 'unhide') {
+                p.textContent = `${step.actor_name} erscheint für einen Hinterhalt!`;
+                const actorSlot = document.getElementById(step.actor_id);
+                if (actorSlot) actorSlot.classList.remove('hidden');
             }
 
                 logDisplay.appendChild(p);

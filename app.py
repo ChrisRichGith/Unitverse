@@ -44,6 +44,7 @@ class Unit:
         self.shield = 0
         self.status_effects = [] # e.g. [{'type': 'frenzy', 'duration': 2}]
         self.frenzy_used = False
+        self.is_hidden = False
 
     def to_dict(self):
         return {
@@ -138,7 +139,7 @@ class Game:
                     })
                 elif attacker.class_name == 'Magier':
                     opponent_player = self.player2 if attacker in self.player1.units else self.player1
-                    main_target = next((u for u in opponent_player.units if not u.is_defeated), None)
+                    main_target = next((u for u in opponent_player.units if not u.is_defeated and not u.is_hidden), None)
                     if main_target:
                         self._apply_damage(attacker, main_target, attacker.attack)
                         splash_targets = self._get_adjacent_units(main_target, opponent_player)
@@ -158,8 +159,24 @@ class Game:
                             # Prevent stacking the same buff
                             if not any(e['type'] == 'battle_song' for e in ally.status_effects):
                                 ally.status_effects.append({'type': 'battle_song', 'duration': 3})
+                elif attacker.class_name == 'Schurke':
+                    # AMBUSH LOGIC
+                    if attacker.is_hidden:
+                        # Ambush attack
+                        opponent_player = self.player2 if attacker in self.player1.units else self.player1
+                        target = next((u for u in opponent_player.units if not u.is_defeated and not u.is_hidden), None)
+                        if target:
+                            # Bonus damage and ignores shield
+                            ambush_damage = int(attacker.attack * 2.0)
+                            self._apply_damage(attacker, target, ambush_damage, ignores_shield=True)
+                        attacker.is_hidden = False
+                        self.combat_log.append({'type': 'unhide', 'actor_id': attacker.id, 'actor_name': attacker.class_name})
+                    else:
+                        # Hide
+                        attacker.is_hidden = True
+                        self.combat_log.append({'type': 'hide', 'actor_id': attacker.id, 'actor_name': attacker.class_name})
                 else:
-                    # STANDARD ATTACK LOGIC (for Barbar, Schurke, and Abenteurer)
+                    # STANDARD ATTACK LOGIC (for Barbar and Abenteurer)
                     if attacker.class_name == 'Barbar' and not attacker.frenzy_used:
                         attacker.status_effects.append({'type': 'frenzy', 'duration': 3})
                         attacker.frenzy_used = True
@@ -168,7 +185,7 @@ class Game:
                         })
 
                     opponent_player = self.player2 if attacker in self.player1.units else self.player1
-                    target = next((u for u in opponent_player.units if not u.is_defeated), None)
+                    target = next((u for u in opponent_player.units if not u.is_defeated and not u.is_hidden), None)
                     if target:
                         self._apply_damage(attacker, target, attacker.attack)
 
@@ -181,15 +198,18 @@ class Game:
         self.determine_winner()
         self.game_state = "finished"
 
-    def _apply_damage(self, attacker, target, damage, is_splash=False):
+    def _apply_damage(self, attacker, target, damage, is_splash=False, ignores_shield=False):
         if any(e['type'] == 'frenzy' for e in attacker.status_effects):
             damage = int(damage * 1.5)
         if any(e['type'] == 'battle_song' for e in attacker.status_effects):
             damage = int(damage * 1.25)
 
-        damage_to_shield = min(target.shield, damage)
-        target.shield -= damage_to_shield
-        remaining_damage = damage - damage_to_shield
+        if not ignores_shield:
+            damage_to_shield = min(target.shield, damage)
+            target.shield -= damage_to_shield
+            remaining_damage = damage - damage_to_shield
+        else:
+            remaining_damage = damage
 
         target.hp = max(0, target.hp - remaining_damage)
 
