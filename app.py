@@ -293,9 +293,17 @@ class Game:
                 self.winner = "Unentschieden"
 
         if self.winner == self.player1.name:
-            for unit in self.player1.units:
-                if not unit.is_defeated:
-                    unit.xp += 50
+            # Calculate XP based on the defeated opponent's team value
+            xp_pool = sum(u.cost for u in self.player2.units)
+
+            # Find survivors
+            surviving_units = [u for u in self.player1.units if not u.is_defeated]
+
+            if surviving_units:
+                # Distribute the XP pool among the survivors
+                xp_per_survivor = xp_pool // len(surviving_units)
+                for unit in surviving_units:
+                    unit.xp += xp_per_survivor
                     self.survivors.append(unit)
 
 # --- UNIT GENERATION ---
