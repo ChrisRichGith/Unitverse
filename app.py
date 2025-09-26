@@ -36,8 +36,8 @@ class Unit:
         else:
             self.attack = 5
 
-        # Calculate cost based on sum of attributes
-        self.cost = sum(self.attributes.values())
+        # Calculate cost based on sum of attributes (halved to make it more affordable)
+        self.cost = sum(self.attributes.values()) // 2
 
         self.is_defeated = False
         self.position = None
@@ -346,6 +346,8 @@ def buy_unit(unit_id):
             player.units.append(unit_to_buy)
             player.board[slot] = unit_to_buy
             game.shop_units.remove(unit_to_buy)
+            # Add a new unit to replace the bought one
+            game.shop_units.append(generate_random_unit())
     return redirect(url_for('index'))
 
 @app.route('/deploy_unit/<unit_id>', methods=['POST'])
@@ -369,19 +371,23 @@ def start_combat():
         return redirect(url_for('index'))
     ai_player = game.player2
     if not ai_player.units:
-        attempts = 0
-        while len(ai_player.units) < 4 and attempts < 20:
-            new_unit = generate_random_unit()
-            if ai_player.gold >= new_unit.cost:
-                slot = next((pos for pos, unit in ai_player.board.items() if unit is None), None)
-                if slot:
-                    ai_player.gold -= new_unit.cost
-                    new_unit.position = slot
-                    ai_player.units.append(new_unit)
-                    ai_player.board[slot] = new_unit
-                else:
-                    break
-            attempts += 1
+        # AI now strategically buys units
+        candidate_units = sorted([generate_random_unit() for _ in range(10)], key=lambda u: u.cost)
+
+        for unit_to_buy in candidate_units:
+            # Stop if board is full or AI can't afford the unit
+            if len(ai_player.units) >= 4 or ai_player.gold < unit_to_buy.cost:
+                break
+
+            slot = next((pos for pos, unit in ai_player.board.items() if unit is None), None)
+            if slot:
+                ai_player.gold -= unit_to_buy.cost
+                unit_to_buy.position = slot
+                ai_player.units.append(unit_to_buy)
+                ai_player.board[slot] = unit_to_buy
+            else:
+                # No more slots, break
+                break
     game.run_full_combat()
     return render_template('combat_replay.html', game=game, combat_log_json=json.dumps([log for log in game.combat_log]), show_animation=True, class_icons=CLASS_ICONS)
 

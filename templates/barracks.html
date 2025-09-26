@@ -14,18 +14,30 @@
         .barracks-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 1em; }
         .unit-card {
             border: 1px solid #666;
-            padding: 0.8em;
-            margin-bottom: 1em;
+            padding: 0.6em;
+            margin-bottom: 0.8em;
             background: linear-gradient(145deg, #444, #3a3a3a);
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.6);
             text-align: left;
-            font-size: 0.9em;
-            width: 220px;
+            font-size: 0.85em;
+            width: 200px;
+            line-height: 1.4;
         }
         .unit-card strong {
-            font-size: 1.1em;
+            font-size: 1em;
             color: #00aaff;
+            display: block;
+            margin-bottom: 0.3em;
+        }
+        .unit-card form {
+            margin-top: 0.5em;
+        }
+        .unit-card button {
+            font-size: 0.9em;
+            padding: 0.4em 0.6em;
+            margin: 0;
+            width: 100%;
         }
         .unit-card small {
             color: #ccc;
