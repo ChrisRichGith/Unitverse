@@ -37,6 +37,7 @@
             text-align: center;
             font-size: 0.85em;
             line-height: 1.4;
+            position: relative; /* For animation z-index */
         }
         .unit-slot strong { color: #00aaff; font-size: 1em; }
         .unit-slot.defeated { background-color: #222 !important; text-decoration: line-through; opacity: 0.4; box-shadow: none; }
@@ -55,6 +56,14 @@
         .log-area p { margin: 0.3em 0; }
 
         /* --- Effect Styles --- */
+        @keyframes pulse-preview {
+            0% { box-shadow: inset 0 0 8px 2px #8a2be2; }
+            50% { box-shadow: inset 0 0 14px 4px #9932cc; }
+            100% { box-shadow: inset 0 0 8px 2px #8a2be2; }
+        }
+        .splash-preview {
+            animation: pulse-preview 0.6s ease-in-out;
+        }
         .attacking { box-shadow: inset 0 0 10px 3px #39e65f; }
         .attacked { box-shadow: inset 0 0 10px 3px #e63946; }
         .healing { box-shadow: inset 0 0 10px 3px #9ef01a; }
@@ -83,7 +92,7 @@
             <h2>{{ game.player2.name }}</h2>
             <div class="board" id="opponent-board">
                 {% for r in range(3) %}{% for c in range(2) %}
-                    {% set unit = game.player2.board.get((r,c)) %}
+                    {% set unit = game.player2.board.get(r ~ ',' ~ c) %}
                     <div class="unit-slot" id="{{ unit.id if unit else '' }}">
                         {% if unit %}
                             <strong>{{ class_icons[unit.class_name] }} {{ unit.class_name }}</strong><br>
@@ -103,7 +112,7 @@
             <h2>{{ game.player1.name }}</h2>
             <div class="board" id="player1-board">
                 {% for r in range(3) %}{% for c in range(2) %}
-                    {% set unit = game.player1.board.get((r,c)) %}
+                    {% set unit = game.player1.board.get(r ~ ',' ~ c) %}
                     <div class="unit-slot" id="{{ unit.id if unit else '' }}">
                         {% if unit %}
                             <strong>{{ class_icons[unit.class_name] }} {{ unit.class_name }}</strong><br>
@@ -148,7 +157,46 @@
             const logDisplay = document.getElementById('combat-log-display');
             let currentStep = 0;
 
-            function processNextStep() {
+            function animateAttack(attacker, target) {
+                return new Promise(resolve => {
+                    if (!attacker || !target) {
+                        resolve();
+                        return;
+                    }
+
+                    const attackerRect = attacker.getBoundingClientRect();
+                    const targetRect = target.getBoundingClientRect();
+
+                    const dx = targetRect.left - attackerRect.left + (targetRect.width - attackerRect.width) / 2;
+                    const dy = targetRect.top - attackerRect.top + (targetRect.height - attackerRect.height) / 2;
+
+                    attacker.style.zIndex = 100;
+                    attacker.style.transition = 'transform 0.25s ease-out';
+                    attacker.style.transform = `translate(${dx}px, ${dy}px)`;
+
+                    const onHit = () => {
+                        attacker.removeEventListener('transitionend', onHit);
+                        target.classList.add('attacked');
+
+                        setTimeout(() => {
+                            attacker.style.transition = 'transform 0.25s ease-in';
+                            attacker.style.transform = 'translate(0, 0)';
+
+                            const onReturn = () => {
+                                attacker.removeEventListener('transitionend', onReturn);
+                                attacker.style.zIndex = '';
+                                attacker.style.transition = '';
+                                attacker.style.transform = '';
+                                resolve();
+                            };
+                            attacker.addEventListener('transitionend', onReturn, { once: true });
+                        }, 150);
+                    };
+                    attacker.addEventListener('transitionend', onHit, { once: true });
+                });
+            }
+
+            async function processNextStep() {
                 if (currentStep >= combatLog.length) {
                     document.getElementById('results-area').style.display = 'block';
                     return;
@@ -156,27 +204,42 @@
 
                 const step = combatLog[currentStep];
                 const p = document.createElement('p');
+                let stepDelay = 700;
 
-                // Reset highlights
-            document.querySelectorAll('.attacking, .attacked, .healing, .shielding').forEach(el => {
-                el.classList.remove('attacking', 'attacked', 'healing', 'shielding');
+                document.querySelectorAll('.attacking, .attacked, .healing, .shielding, .splash-preview').forEach(el => {
+                    el.classList.remove('attacking', 'attacked', 'healing', 'shielding', 'splash-preview');
                 });
 
                 if (step.type === 'round') {
                     p.innerHTML = `<strong>--- Runde ${step.number} ---</strong>`;
+                } else if (step.type === 'splash_preview') {
+                    p.textContent = `Magier bereitet einen Flächenzauber vor...`;
+                    const attackerSlot = document.getElementById(step.attacker_id);
+                    if (attackerSlot) attackerSlot.classList.add('attacking');
+                    step.target_ids.forEach(targetId => {
+                        const targetSlot = document.getElementById(targetId);
+                        if (targetSlot) targetSlot.classList.add('splash-preview');
+                    });
                 } else if (step.type === 'attack') {
                     const attackerSlot = document.getElementById(step.attacker_id);
                     const targetSlot = document.getElementById(step.target_id);
 
                     if (step.is_splash) {
                         p.textContent = `${step.target_name} erleidet ${step.damage} Flächenschaden.`;
+                        if (targetSlot) targetSlot.classList.add('attacked');
                     } else {
                         p.textContent = `${step.attacker_name} greift ${step.target_name} für ${step.damage} Schaden an.`;
+                        if (attackerSlot && targetSlot) {
+                            stepDelay = 100;
+                            await animateAttack(attackerSlot, targetSlot);
+                        }
                     }
 
                     if (attackerSlot) attackerSlot.classList.add('attacking');
                     if (targetSlot) {
-                        targetSlot.classList.add('attacked');
+                        if (step.is_splash && !targetSlot.classList.contains('attacked')) {
+                            targetSlot.classList.add('attacked');
+                        }
                         const hpSpan = targetSlot.querySelector('.hp-val');
                         const shieldSpan = targetSlot.querySelector('.shield-display');
                         if (hpSpan) hpSpan.textContent = step.target_hp_after;
@@ -186,72 +249,66 @@
                         }
                     }
                 } else if (step.type === 'heal') {
-                p.textContent = `${step.healer_name} heilt ${step.target_name} für ${step.heal_amount} HP.`;
-                const healerSlot = document.getElementById(step.healer_id);
-                const targetSlot = document.getElementById(step.target_id);
-
-                if (healerSlot) healerSlot.classList.add('attacking');
-                if (targetSlot) {
-                    targetSlot.classList.add('healing');
-                    const hpSpan = targetSlot.querySelector('.hp-val');
-                    if (hpSpan) hpSpan.textContent = step.target_hp_after;
-                }
-            } else if (step.type === 'shield') {
-                p.textContent = `${step.actor_name} erhält einen Schild von ${step.shield_amount}.`;
-                const actorSlot = document.getElementById(step.actor_id);
-                if (actorSlot) {
-                    actorSlot.classList.add('shielding');
-                    const shieldSpan = actorSlot.querySelector('.shield-display');
-                    if (shieldSpan) shieldSpan.textContent = `+${step.shield_total} Schild`;
-                }
-            } else if (step.type === 'frenzy_start') {
-                p.textContent = `${step.actor_name} verfällt in Raserei!`;
-                const actorSlot = document.getElementById(step.actor_id);
-                if (actorSlot) actorSlot.classList.add('frenzy');
-            } else if (step.type === 'battle_song') {
-                p.textContent = `${step.actor_name} spielt ein Kampflied! Alle Verbündeten sind gestärkt.`;
-                const actorSlot = document.getElementById(step.actor_id);
-                if (actorSlot) {
-                    actorSlot.classList.add('attacking');
-                    // Find all allies and apply buff
-                    const allies = actorSlot.closest('.player-area').querySelectorAll('.unit-slot');
-                    allies.forEach(allySlot => {
-                        if (allySlot.id && allySlot.id !== step.actor_id) {
-                            allySlot.classList.add('buffed');
-                        }
-                    });
-                }
-            } else if (step.type === 'effect_end') {
-                p.textContent = `${step.effect.charAt(0).toUpperCase() + step.effect.slice(1)} von ${step.unit_name} endet.`;
-                const unitSlot = document.getElementById(step.unit_id);
-                if (unitSlot) {
-                    let cssClass = '';
-                    if (step.effect === 'frenzy') cssClass = 'frenzy';
-                    if (step.effect === 'battle_song') cssClass = 'buffed';
-                    if (cssClass) {
-                        unitSlot.classList.remove(cssClass);
+                    p.textContent = `${step.healer_name} heilt ${step.target_name} für ${step.heal_amount} HP.`;
+                    const healerSlot = document.getElementById(step.healer_id);
+                    const targetSlot = document.getElementById(step.target_id);
+                    if (healerSlot) healerSlot.classList.add('attacking');
+                    if (targetSlot) {
+                        targetSlot.classList.add('healing');
+                        const hpSpan = targetSlot.querySelector('.hp-val');
+                        if (hpSpan) hpSpan.textContent = step.target_hp_after;
                     }
+                } else if (step.type === 'shield') {
+                    p.textContent = `${step.actor_name} erhält einen Schild von ${step.shield_amount}.`;
+                    const actorSlot = document.getElementById(step.actor_id);
+                    if (actorSlot) {
+                        actorSlot.classList.add('shielding');
+                        const shieldSpan = actorSlot.querySelector('.shield-display');
+                        if (shieldSpan) shieldSpan.textContent = `+${step.shield_total} Schild`;
+                    }
+                } else if (step.type === 'frenzy_start') {
+                    p.textContent = `${step.actor_name} verfällt in Raserei!`;
+                    const actorSlot = document.getElementById(step.actor_id);
+                    if (actorSlot) actorSlot.classList.add('frenzy');
+                } else if (step.type === 'battle_song') {
+                    p.textContent = `${step.actor_name} spielt ein Kampflied! Alle Verbündeten sind gestärkt.`;
+                    const actorSlot = document.getElementById(step.actor_id);
+                    if (actorSlot) {
+                        actorSlot.classList.add('attacking');
+                        const allies = actorSlot.closest('.player-area').querySelectorAll('.unit-slot');
+                        allies.forEach(allySlot => {
+                            if (allySlot.id && allySlot.id !== step.actor_id) {
+                                allySlot.classList.add('buffed');
+                            }
+                        });
+                    }
+                } else if (step.type === 'effect_end') {
+                    p.textContent = `${step.effect.charAt(0).toUpperCase() + step.effect.slice(1)} von ${step.unit_name} endet.`;
+                    const unitSlot = document.getElementById(step.unit_id);
+                    if (unitSlot) {
+                        let cssClass = '';
+                        if (step.effect === 'frenzy') cssClass = 'frenzy';
+                        if (step.effect === 'battle_song') cssClass = 'buffed';
+                        if (cssClass) unitSlot.classList.remove(cssClass);
+                    }
+                } else if (step.type === 'hide') {
+                    p.textContent = `${step.actor_name} versteckt sich in den Schatten!`;
+                    const actorSlot = document.getElementById(step.actor_id);
+                    if (actorSlot) actorSlot.classList.add('hidden');
+                } else if (step.type === 'unhide') {
+                    p.textContent = `${step.actor_name} erscheint für einen Hinterhalt!`;
+                    const actorSlot = document.getElementById(step.actor_id);
+                    if (actorSlot) actorSlot.classList.remove('hidden');
                 }
-            } else if (step.type === 'hide') {
-                p.textContent = `${step.actor_name} versteckt sich in den Schatten!`;
-                const actorSlot = document.getElementById(step.actor_id);
-                if (actorSlot) actorSlot.classList.add('hidden');
-            } else if (step.type === 'unhide') {
-                p.textContent = `${step.actor_name} erscheint für einen Hinterhalt!`;
-                const actorSlot = document.getElementById(step.actor_id);
-                if (actorSlot) actorSlot.classList.remove('hidden');
-            }
 
                 logDisplay.appendChild(p);
-                logDisplay.scrollTop = logDisplay.scrollHeight; // Auto-scroll
+                logDisplay.scrollTop = logDisplay.scrollHeight;
                 currentStep++;
-                setTimeout(processNextStep, 700); // 0.7 second delay between steps
+                setTimeout(processNextStep, stepDelay);
             }
 
-            // Start the combat animation
             setTimeout(processNextStep, 1000);
         } else {
-            // If not showing animation, just display the results area immediately.
             document.getElementById('results-area').style.display = 'block';
         }
     </script>

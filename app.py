@@ -74,7 +74,7 @@ class Player:
         self.gold = 100
         self.units = []
         self.barracks = []
-        self.board = {(r, c): None for r in range(3) for c in range(2)}
+        self.board = {f"{r},{c}": None for r in range(3) for c in range(2)}
 
     def to_dict(self):
         return { "name": self.name, "barracks": [u.to_dict() for u in self.barracks] }
@@ -141,8 +141,25 @@ class Game:
                     opponent_player = self.player2 if attacker in self.player1.units else self.player1
                     main_target = next((u for u in opponent_player.units if not u.is_defeated and not u.is_hidden), None)
                     if main_target:
-                        self._apply_damage(attacker, main_target, attacker.attack)
+                        # Find all targets for the preview
                         splash_targets = self._get_adjacent_units(main_target, opponent_player)
+                        all_target_units = [main_target] + [
+                            t for t in splash_targets
+                            if t != main_target and not t.is_defeated and not t.is_hidden
+                        ]
+                        all_target_ids = [t.id for t in all_target_units]
+
+                        # Add the preview log entry before the attack
+                        self.combat_log.append({
+                            'type': 'splash_preview',
+                            'attacker_id': attacker.id,
+                            'target_ids': all_target_ids
+                        })
+
+                        # Apply damage to main target
+                        self._apply_damage(attacker, main_target, attacker.attack)
+
+                        # Apply damage to splash targets
                         for splash_target in splash_targets:
                             if splash_target != main_target and not splash_target.is_defeated and not splash_target.is_hidden:
                                 splash_damage = int(attacker.attack * 0.5)
@@ -227,14 +244,14 @@ class Game:
         if not target_unit.position:
             return []
 
-        r, c = target_unit.position
+        r, c = map(int, target_unit.position.split(','))
         adjacent_positions = [
             (r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)
         ]
 
         adjacent_units = []
-        for pos in adjacent_positions:
-            unit = opponent_player.board.get(pos)
+        for r_adj, c_adj in adjacent_positions:
+            unit = opponent_player.board.get(f"{r_adj},{c_adj}")
             if unit:
                 adjacent_units.append(unit)
         return adjacent_units

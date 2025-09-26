@@ -142,7 +142,7 @@
                 <div class="board">
                     {% for r in range(3) %}{% for c in range(2) %}
                         <div class="slot">
-                        {% set unit = game.player1.board.get((r,c)) %}
+                        {% set unit = game.player1.board.get(r ~ ',' ~ c) %}
                         {% if unit %}
                             <strong>{{ class_icons[unit.class_name] }} {{ unit.class_name }}</strong><br>
                             <small>HP: {{ unit.hp }}</small>
