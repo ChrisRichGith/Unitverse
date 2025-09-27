@@ -332,7 +332,7 @@
 
                 const step = combatLog[currentStep];
                 const p = document.createElement('p');
-                let stepDelay = 1200;
+                let stepDelay = 2000; // Increased delay to allow sounds to play
 
                 // Play sound if one is associated with this log step
                 if (step.sound) {
@@ -377,7 +377,6 @@
                     } else {
                         p.textContent = `${step.attacker_name} greift ${step.target_name} für ${step.damage} Schaden an.`;
                         if (attackerSlot && targetSlot) {
-                            stepDelay = 100;
                             await animateAttack(attackerSlot, targetSlot);
                         }
                     }
