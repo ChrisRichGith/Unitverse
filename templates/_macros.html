@@ -3,6 +3,13 @@
     <div class="unit-card-header">
         <strong>{{ class_icons.get(unit.class_name, '❓') }} {{ unit.class_name }} {% if unit.level %}(Lvl {{ unit.level }}){% endif %}</strong>
     </div>
+    <div class="health-bar-container">
+        {% if action == 'combat' %}
+            <div class="health-bar" style="width: 100%;"></div>
+        {% else %}
+            <div class="health-bar" style="width: {{ (unit.hp / unit.max_hp) * 100 }}%;"></div>
+        {% endif %}
+    </div>
     <div class="unit-card-body">
         <div class="stats">
             HP: {{ unit.max_hp }} | Atk: {{ unit.attack }} | Init: {{ unit.initiative }}

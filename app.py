@@ -127,6 +127,10 @@ class Game:
                 if attacker.is_defeated:
                     continue
 
+                # Log which player's turn it is
+                active_player_id = "player1" if attacker in self.player1.units else "player2"
+                self.combat_log.append({'type': 'active_player_turn', 'player_id': active_player_id})
+
                 # --- ACTION LOGIC ---
                 if attacker.class_name == 'Kleriker':
                     if attacker.ability_cooldown == 0:
@@ -141,7 +145,8 @@ class Game:
                             self.combat_log.append({
                                 'type': 'heal', 'healer_id': attacker.id, 'healer_name': attacker.class_name,
                                 'target_id': target.id, 'target_name': target.class_name,
-                                'heal_amount': target.hp - original_hp, 'target_hp_after': target.hp
+                                'heal_amount': target.hp - original_hp, 'target_hp_after': target.hp,
+                                'target_max_hp': target.max_hp
                             })
                             attacker.ability_cooldown = 2
                         else:
@@ -241,7 +246,7 @@ class Game:
             'type': 'attack', 'attacker_id': attacker.id, 'attacker_name': attacker.class_name,
             'target_id': target.id, 'target_name': target.class_name, 'damage': damage,
             'target_hp_after': target.hp, 'target_shield_after': target.shield, 'is_splash': is_splash,
-            'ignores_shield': ignores_shield
+            'ignores_shield': ignores_shield, 'target_max_hp': target.max_hp
         }
         if target.hp == 0:
             target.is_defeated = True
@@ -359,9 +364,7 @@ def index():
 def start_game():
     global game
     game = Game()
-    player_data = load_data()
-    if player_data:
-        game.player1 = player_data
+    # Do not load saved data when starting a new game. That's for the "Load Game" button.
     game.game_state = "preparation"
     game.shop_units = [generate_random_unit() for _ in range(4)]
     return redirect(url_for('index'))

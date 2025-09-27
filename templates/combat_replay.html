@@ -11,7 +11,18 @@
             padding: 1em;
         }
         .game-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .player-area { width: 60%; margin: 0.5em 0; }
+        .player-area {
+            width: 60%;
+            margin: 0.5em 0;
+            padding: 1em;
+            border: 2px solid #444;
+            border-radius: 12px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .active-player-area {
+            border-color: #00c3ff;
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.6);
+        }
         .board {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -82,6 +93,19 @@
         #opponent-board { transform: rotate(180deg); }
         #opponent-board .unit-slot { transform: rotate(180deg); } /* Rotate slot content back */
 
+        .health-bar-container {
+            background-color: #111;
+            border-radius: 3px;
+            margin: 0.5em 0.6em 0;
+            height: 8px;
+            border: 1px solid #000;
+        }
+        .health-bar {
+            background: linear-gradient(to right, #28a745, #218838);
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease-in-out;
+        }
         .unit-card {
             border: 1px solid #777;
             border-radius: 10px;
@@ -291,7 +315,21 @@
                     el.classList.remove('attacking', 'attacked', 'healing', 'shielding', 'splash-preview', 'self-action');
                 });
 
-                if (step.type === 'round') {
+                if (step.type === 'active_player_turn') {
+                    const player1Area = document.getElementById('player1-area');
+                    const player2Area = document.getElementById('player2-area');
+                    let playerName = step.player_id === 'player1' ? {{ game.player1.name|tojson }} : {{ game.player2.name|tojson }};
+
+                    if (step.player_id === 'player1') {
+                        player1Area.classList.add('active-player-area');
+                        player2Area.classList.remove('active-player-area');
+                    } else {
+                        player2Area.classList.add('active-player-area');
+                        player1Area.classList.remove('active-player-area');
+                    }
+                    p.innerHTML = `<em style="color: #00c3ff;">-- ${playerName} ist am Zug --</em>`;
+                    stepDelay = 400; // Short delay to make the highlight noticeable
+                } else if (step.type === 'round') {
                     p.innerHTML = `<strong>--- Runde ${step.number} ---</strong>`;
                 } else if (step.type === 'splash_preview') {
                     p.textContent = `Magier bereitet einen Flächenzauber vor...`;
@@ -323,8 +361,14 @@
                         }
                         const hpSpan = targetSlot.querySelector('.hp-val');
                         const shieldSpan = targetSlot.querySelector('.shield-display');
+                        const healthBar = targetSlot.querySelector('.health-bar');
+
                         if (hpSpan) hpSpan.textContent = step.target_hp_after;
                         if (shieldSpan) shieldSpan.textContent = step.target_shield_after > 0 ? `+${step.target_shield_after} Schild` : '';
+                        if (healthBar && step.target_max_hp > 0) {
+                            healthBar.style.width = `${(step.target_hp_after / step.target_max_hp) * 100}%`;
+                        }
+
                         if (step.defeated) {
                             targetSlot.classList.add('defeated');
                         }
@@ -337,7 +381,12 @@
                     if (targetSlot) {
                         targetSlot.classList.add('healing');
                         const hpSpan = targetSlot.querySelector('.hp-val');
+                        const healthBar = targetSlot.querySelector('.health-bar');
+
                         if (hpSpan) hpSpan.textContent = step.target_hp_after;
+                        if (healthBar && step.target_max_hp > 0) {
+                            healthBar.style.width = `${(step.target_hp_after / step.target_max_hp) * 100}%`;
+                        }
                     }
                 } else if (step.type === 'shield') {
                     p.textContent = `${step.actor_name} erhält einen Schild von ${step.shield_amount}.`;
