@@ -142,12 +142,18 @@
     {% if game.game_state == 'title_screen' %}
     <div class="title-screen">
         <h1>UnitVerse</h1>
-        <form action="/start_game" method="post">
-            <button type="submit">Spiel starten</button>
-        </form>
-        <form action="/load_game" method="post" style="display: inline;">
-            <button type="submit" {% if not save_exists %}disabled{% endif %}>Spiel laden</button>
-        </form>
+        {% if save_exists %}
+            <form action="/start_game" method="post" style="display: inline;">
+                <button type="submit">Nächste Runde</button>
+            </form>
+            <form action="/new_game" method="post" style="display: inline;">
+                <button type="submit" style="background-color: #6c757d;">Neues Spiel</button>
+            </form>
+        {% else %}
+            <form action="/start_game" method="post">
+                <button type="submit">Spiel starten</button>
+            </form>
+        {% endif %}
         <a href="{{ url_for('barracks') }}"><button>Kaserne</button></a>
     </div>
     {% elif game.game_state == 'preparation' %}

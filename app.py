@@ -355,19 +355,43 @@ CLASS_ICONS = {
 @app.route('/')
 def index():
     global game
+    # If a combat was just finished, reset the game object for a clean slate,
+    # but the player data (barracks) will be loaded by start_game.
     if game.game_state == "finished":
         game = Game()
-    save_exists = os.path.exists("game_data.json")
+
+    # Navigating to the root URL should always show the title screen.
+    game.game_state = "title_screen"
+
+    save_exists = os.path.exists(SAVE_FILE)
     return render_template('index.html', game=game, save_exists=save_exists, class_icons=CLASS_ICONS)
 
 @app.route('/start_game', methods=['POST'])
 def start_game():
     global game
     game = Game()
-    # Do not load saved data when starting a new game. That's for the "Load Game" button.
+    player_data = load_data()
+    if player_data:
+        game.player1 = player_data
     game.game_state = "preparation"
     game.shop_units = [generate_random_unit() for _ in range(4)]
-    return redirect(url_for('index'))
+    return render_template('index.html', game=game, save_exists=os.path.exists(SAVE_FILE), class_icons=CLASS_ICONS)
+
+
+@app.route('/new_game', methods=['POST'])
+def new_game():
+    """Clears save data and starts a fresh game."""
+    global game
+    if os.path.exists(SAVE_FILE):
+        os.remove(SAVE_FILE)
+
+    # Set up the new game state directly
+    game = Game()
+    game.game_state = "preparation"
+    game.shop_units = [generate_random_unit() for _ in range(4)]
+
+    # Render the template directly
+    return render_template('index.html', game=game, save_exists=False, class_icons=CLASS_ICONS)
 
 @app.route('/buy_unit/<unit_id>', methods=['POST'])
 def buy_unit(unit_id):
