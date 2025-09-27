@@ -207,7 +207,7 @@ class Game:
                         self.combat_log.append({'type': 'unhide', 'actor_id': attacker.id, 'actor_name': attacker.class_name})
                     elif attacker.ability_cooldown == 0:
                         attacker.is_hidden = True
-                        self.combat_log.append({'type': 'hide', 'actor_id': attacker.id, 'actor_name': attacker.class_name})
+                        self.combat_log.append({'type': 'hide', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Schurke.mp3'})
                         attacker.ability_cooldown = 2
                     else:
                         self._perform_standard_attack(attacker)
