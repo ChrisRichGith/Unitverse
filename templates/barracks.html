@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+    {% from "_macros.html" import render_unit_card %}
     <meta charset="UTF-8">
     <title>Kaserne</title>
     <style>
@@ -66,18 +67,7 @@
     {% if player and player.barracks %}
         <div class="barracks-container">
         {% for unit in player.barracks %}
-            <div class="unit-card">
-                <strong>{{ class_icons[unit.class_name] }} {{ unit.class_name }} (Lvl {{ unit.level }})</strong><br>
-                HP: {{ unit.max_hp }} | Atk: {{ unit.attack }} | Init: {{ unit.initiative }}<br>
-                <small>
-                STR:{{ unit.attributes.str }} DEX:{{ unit.attributes.dex }} CON:{{ unit.attributes.con }}<br>
-                INT:{{ unit.attributes.int }} WIS:{{ unit.attributes.wis }} CHA:{{ unit.attributes.cha }}
-                </small><br>
-                XP: {{ unit.xp }} / {{ unit.level * 100 }}<br>
-                <form action="/upgrade_unit/{{ unit.id }}" method="post">
-                    <button type="submit" {% if unit.xp < unit.level * 100 %}disabled{% endif %}>Upgrade</button>
-                </form>
-            </div>
+            {{ render_unit_card(unit, class_icons, action='upgrade') }}
         {% endfor %}
         </div>
     {% else %}

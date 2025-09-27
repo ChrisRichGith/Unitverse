@@ -75,7 +75,7 @@ class Player:
         self.gold = 100
         self.units = []
         self.barracks = []
-        self.board = {f"{r},{c}": None for r in range(3) for c in range(2)}
+        self.board = {f"{r},{c}": None for r in range(2) for c in range(3)}
 
     def to_dict(self):
         return { "name": self.name, "barracks": [u.to_dict() for u in self.barracks] }
@@ -409,7 +409,7 @@ def start_combat():
 
         for unit_to_buy in candidate_units:
             # Stop if board is full or AI can't afford the unit
-            if len(ai_player.units) >= 4 or ai_player.gold < unit_to_buy.cost:
+            if len(ai_player.units) >= 6 or ai_player.gold < unit_to_buy.cost:
                 break
 
             slot = next((pos for pos, unit in ai_player.board.items() if unit is None), None)
