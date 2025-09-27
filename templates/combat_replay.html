@@ -11,9 +11,21 @@
             padding: 1em;
         }
         .game-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .combat-main-container {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 2em;
+        }
+        .boards-container {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+        }
         .player-area {
-            width: 50%;
-            margin: 0.5em 0;
+            /* width is now controlled by flex container */
+            margin: 0.2em 0; /* Reduced vertical margin */
             padding: 1em;
             border: 2px solid #444;
             border-radius: 12px;
@@ -52,8 +64,8 @@
         }
         .unit-slot.defeated { background-color: #222 !important; text-decoration: line-through; opacity: 0.4; box-shadow: none; }
         .log-area {
-            width: 60%;
-            height: 150px;
+            flex: 2;
+            height: 420px; /* Adjusted height to better match boards */
             overflow-y: scroll;
             border: 1px solid #555;
             padding: 10px;
@@ -184,35 +196,39 @@
 
 <body>
     <div class="game-container">
-        <div class="player-area" id="player2-area">
-            <h2>{{ game.player2.name }}</h2>
-            <div class="board" id="opponent-board">
-                {% for r in range(2) %}{% for c in range(3) %}
-                    {% set unit = game.player2.board.get(r ~ ',' ~ c) %}
-                    <div class="unit-slot" id="{{ unit.id if unit else '' }}">
-                        {% if unit %}
-                            {{ render_unit_card(unit, class_icons, action='combat') }}
-                        {% endif %}
+        <div class="combat-main-container">
+            <div class="boards-container">
+                <div class="player-area" id="player2-area">
+                    <h2>{{ game.player2.name }}</h2>
+                    <div class="board" id="opponent-board">
+                        {% for r in range(2) %}{% for c in range(3) %}
+                            {% set unit = game.player2.board.get(r ~ ',' ~ c) %}
+                            <div class="unit-slot" id="{{ unit.id if unit else '' }}">
+                                {% if unit %}
+                                    {{ render_unit_card(unit, class_icons, action='combat') }}
+                                {% endif %}
+                            </div>
+                        {% endfor %}{% endfor %}
                     </div>
-                {% endfor %}{% endfor %}
+                </div>
+
+                <div class="player-area" id="player1-area">
+                    <h2>{{ game.player1.name }}</h2>
+                    <div class="board" id="player1-board">
+                        {% for r in range(2) %}{% for c in range(3) %}
+                            {% set unit = game.player1.board.get(r ~ ',' ~ c) %}
+                            <div class="unit-slot" id="{{ unit.id if unit else '' }}">
+                                {% if unit %}
+                                    {{ render_unit_card(unit, class_icons, action='combat') }}
+                                {% endif %}
+                            </div>
+                        {% endfor %}{% endfor %}
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="log-area" id="combat-log-display">
-            <h3>Kampf Log</h3>
-        </div>
-
-        <div class="player-area" id="player1-area">
-            <h2>{{ game.player1.name }}</h2>
-            <div class="board" id="player1-board">
-                {% for r in range(2) %}{% for c in range(3) %}
-                    {% set unit = game.player1.board.get(r ~ ',' ~ c) %}
-                    <div class="unit-slot" id="{{ unit.id if unit else '' }}">
-                        {% if unit %}
-                            {{ render_unit_card(unit, class_icons, action='combat') }}
-                        {% endif %}
-                    </div>
-                {% endfor %}{% endfor %}
+            <div class="log-area" id="combat-log-display">
+                <h3>Kampf Log</h3>
             </div>
         </div>
     </div>

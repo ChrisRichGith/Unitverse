@@ -356,12 +356,9 @@ CLASS_ICONS = {
 def index():
     global game
     # If a combat was just finished, reset the game object for a clean slate,
-    # but the player data (barracks) will be loaded by start_game.
+    # which will default to the title_screen state.
     if game.game_state == "finished":
         game = Game()
-
-    # Navigating to the root URL should always show the title screen.
-    game.game_state = "title_screen"
 
     save_exists = os.path.exists(SAVE_FILE)
     return render_template('index.html', game=game, save_exists=save_exists, class_icons=CLASS_ICONS)
@@ -500,6 +497,15 @@ def upgrade_unit(unit_id):
                         player.barracks[i] = upgraded_unit
                         break
                 save_data(player)
+    return redirect(url_for('barracks'))
+
+
+@app.route('/save_barracks', methods=['POST'])
+def save_barracks():
+    """Saves the current barracks state."""
+    player = load_data()
+    if player:
+        save_data(player)
     return redirect(url_for('barracks'))
 
 if __name__ == '__main__':
