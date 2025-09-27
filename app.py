@@ -240,7 +240,8 @@ class Game:
         log_entry = {
             'type': 'attack', 'attacker_id': attacker.id, 'attacker_name': attacker.class_name,
             'target_id': target.id, 'target_name': target.class_name, 'damage': damage,
-            'target_hp_after': target.hp, 'target_shield_after': target.shield, 'is_splash': is_splash
+            'target_hp_after': target.hp, 'target_shield_after': target.shield, 'is_splash': is_splash,
+            'ignores_shield': ignores_shield
         }
         if target.hp == 0:
             target.is_defeated = True
