@@ -433,7 +433,7 @@
                     p.textContent = `${step.actor_name} spielt ein Kampflied! Alle Verbündeten sind gestärkt.`;
                     const actorSlot = document.getElementById(step.actor_id);
                     if (actorSlot) {
-                        actorSlot.classList.add('attacking', 'self-action');
+                        actorSlot.classList.add('attacking'); // Removed 'self-action' to prevent rotation bug
                         const allies = actorSlot.closest('.player-area').querySelectorAll('.unit-slot');
                         allies.forEach(allySlot => {
                             if (allySlot.id && allySlot.id !== step.actor_id) {
