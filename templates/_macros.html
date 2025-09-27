@@ -1,5 +1,5 @@
 {% macro render_unit_card(unit, class_icons, action=None, player_gold=None, game=None) %}
-<div class="unit-card">
+<div class="unit-card" data-unit-id="{{ unit.id }}">
     <div class="unit-card-header">
         <strong>{{ class_icons.get(unit.class_name, '❓') }} {{ unit.class_name }} {% if unit.level %}(Lvl {{ unit.level }}){% endif %}</strong>
     </div>
@@ -22,6 +22,15 @@
         </div>
     </div>
     <div class="unit-card-footer">
+        <div class="status-effects-container">
+            {% if action != 'combat' %}
+                {% for effect in unit.status_effects %}
+                    <div class="status-effect buff" data-effect-type="{{ effect.type }}">
+                        {{ effect.type|capitalize|replace('_', ' ') }} ({{ effect.duration }})
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
         {% if action == 'buy' %}
             <div class="cost">Kosten: {{ unit.cost }} Gold</div>
             <form action="/buy_unit/{{ unit.id }}" method="post">
@@ -36,13 +45,9 @@
             <form action="/upgrade_unit/{{ unit.id }}" method="post">
                 <button type="submit" {% if unit.xp < unit.level * 100 %}disabled{% endif %}>Upgrade</button>
             </form>
-        {% elif action == 'board' %}
-            <div class="hp-current">HP: {{ unit.hp }} / {{ unit.max_hp }}</div>
         {% elif action == 'combat' %}
-             <div class="hp-current">HP: <span class="hp-val">{{ unit.hp }}</span>/{{ unit.max_hp }}</div>
              <div class="shield-display" style="color: #48cae4; font-weight: bold;"></div>
         {% elif action == 'survivor' %}
-             <div class="hp-current">HP: {{ unit.hp }}/{{ unit.max_hp }}</div>
              <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
                 <button type="submit">In Kaserne</button>
             </form>

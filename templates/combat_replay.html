@@ -186,6 +186,27 @@
             font-size: 0.9em;
             padding: 0.5em 0.3em;
         }
+        .status-effects-container {
+            min-height: 20px;
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 0.5em;
+        }
+        .status-effect {
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #fff;
+        }
+        .buff {
+            background-color: #28a745;
+        }
+        .debuff {
+            background-color: #dc3545;
+        }
 
         .survivor-container {
             display: flex;
@@ -449,7 +470,20 @@
                 } else if (step.type === 'frenzy_start') {
                     p.textContent = `${step.actor_name} verfällt in Raserei!`;
                     const actorSlot = document.getElementById(step.actor_id);
-                    if (actorSlot) actorSlot.classList.add('frenzy', 'self-action');
+                    if (actorSlot) {
+                        actorSlot.classList.add('frenzy', 'self-action');
+                        const unitCard = actorSlot.querySelector('.unit-card');
+                        if (unitCard) {
+                            const container = unitCard.querySelector('.status-effects-container');
+                            if (container) {
+                                const effectDiv = document.createElement('div');
+                                effectDiv.className = 'status-effect buff';
+                                effectDiv.dataset.effectType = 'frenzy';
+                                effectDiv.textContent = 'Frenzy (3)'; // Duration is hardcoded in backend
+                                container.appendChild(effectDiv);
+                            }
+                        }
+                    }
                 } else if (step.type === 'battle_song') {
                     p.textContent = `${step.actor_name} spielt ein Kampflied! Alle Verbündeten sind gestärkt.`;
                     const actorSlot = document.getElementById(step.actor_id);
@@ -459,6 +493,17 @@
                         allies.forEach(allySlot => {
                             if (allySlot.id && allySlot.id !== step.actor_id) {
                                 allySlot.classList.add('buffed');
+                                const unitCard = allySlot.querySelector('.unit-card');
+                                if (unitCard) {
+                                    const container = unitCard.querySelector('.status-effects-container');
+                                    if (container) {
+                                        const effectDiv = document.createElement('div');
+                                        effectDiv.className = 'status-effect buff';
+                                        effectDiv.dataset.effectType = 'battle_song';
+                                        effectDiv.textContent = 'Battle Song (3)';
+                                        container.appendChild(effectDiv);
+                                    }
+                                }
                             }
                         });
                     }
@@ -466,10 +511,20 @@
                     p.textContent = `${step.effect.charAt(0).toUpperCase() + step.effect.slice(1)} von ${step.unit_name} endet.`;
                     const unitSlot = document.getElementById(step.unit_id);
                     if (unitSlot) {
+                        // Remove the visual border effect
                         let cssClass = '';
                         if (step.effect === 'frenzy') cssClass = 'frenzy';
                         if (step.effect === 'battle_song') cssClass = 'buffed';
                         if (cssClass) unitSlot.classList.remove(cssClass);
+
+                        // Remove the status effect tag from the card
+                        const unitCard = unitSlot.querySelector('.unit-card');
+                        if (unitCard) {
+                            const effectDiv = unitCard.querySelector(`.status-effect[data-effect-type="${step.effect}"]`);
+                            if (effectDiv) {
+                                effectDiv.remove();
+                            }
+                        }
                     }
                 } else if (step.type === 'hide') {
                     p.textContent = `${step.actor_name} versteckt sich in den Schatten!`;
