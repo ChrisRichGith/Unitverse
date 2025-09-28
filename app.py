@@ -96,6 +96,7 @@ class Game:
         opponent_player = self.player2 if attacker in self.player1.units else self.player1
         target = next((u for u in opponent_player.units if not u.is_defeated and not u.is_hidden), None)
         if target:
+            # Select a random standard attack sound
             attack_sound = f"Attack_0{random.randint(1, 4)}.mp3"
             self._apply_damage(attacker, target, attacker.attack, sound=attack_sound)
         else:
@@ -122,15 +123,17 @@ class Game:
                     effect['duration'] -= 1
                     if effect['duration'] <= 0:
                         unit.status_effects.remove(effect)
-                        self.combat_log.append({'type': 'effect_end', 'unit_id': unit.id, 'unit_name': unit.class_name, 'effect': effect['type']})
+                        effect_owner = "player1" if unit in self.player1.units else "player2"
+                        self.combat_log.append({'type': 'effect_end', 'unit_id': unit.id, 'unit_name': unit.class_name, 'effect': effect['type'], 'player_owner': effect_owner})
 
             for attacker in turn_order:
                 if attacker.is_defeated:
                     continue
 
+                action_owner = "player1" if attacker in self.player1.units else "player2"
+
                 # Log which player's turn it is
-                active_player_id = "player1" if attacker in self.player1.units else "player2"
-                self.combat_log.append({'type': 'active_player_turn', 'player_id': active_player_id})
+                self.combat_log.append({'type': 'active_player_turn', 'player_id': action_owner})
 
                 # --- ACTION LOGIC ---
                 if attacker.class_name == 'Kleriker':
@@ -147,7 +150,8 @@ class Game:
                                 'type': 'heal', 'healer_id': attacker.id, 'healer_name': attacker.class_name,
                                 'target_id': target.id, 'target_name': target.class_name,
                                 'heal_amount': target.hp - original_hp, 'target_hp_after': target.hp,
-                                'target_max_hp': target.max_hp, 'sound': 'Kleriker.mp3'
+                                'target_max_hp': target.max_hp, 'sound': 'Priest_Healing.mp3',
+                                'player_owner': action_owner
                             })
                             attacker.ability_cooldown = 2
                         else:
@@ -162,7 +166,7 @@ class Game:
                         self.combat_log.append({
                             'type': 'shield', 'actor_id': attacker.id, 'actor_name': attacker.class_name,
                             'shield_amount': shield_amount, 'shield_total': attacker.shield,
-                            'sound': 'Krieger.mp3'
+                            'sound': 'Shield_Warrior.mp3', 'player_owner': action_owner
                         })
                         attacker.ability_cooldown = 3
                     else:
@@ -175,8 +179,8 @@ class Game:
                         if main_target:
                             splash_targets = self._get_adjacent_units(main_target, opponent_player)
                             all_target_ids = [main_target.id] + [t.id for t in splash_targets if t != main_target and not t.is_defeated and not t.is_hidden]
-                            self.combat_log.append({'type': 'splash_preview', 'attacker_id': attacker.id, 'target_ids': all_target_ids})
-                            self._apply_damage(attacker, main_target, attacker.attack, sound='Magier.mp3')
+                            self.combat_log.append({'type': 'splash_preview', 'attacker_id': attacker.id, 'target_ids': all_target_ids, 'sound': 'Mage_Fireball.mp3', 'player_owner': action_owner})
+                            self._apply_damage(attacker, main_target, attacker.attack)
                             for splash_target in splash_targets:
                                 if splash_target != main_target and not splash_target.is_defeated and not splash_target.is_hidden:
                                     self._apply_damage(attacker, splash_target, int(attacker.attack * 0.5), is_splash=True)
@@ -189,7 +193,7 @@ class Game:
                 elif attacker.class_name == 'Barde':
                     if attacker.ability_cooldown == 0:
                         allied_player = self.player1 if attacker in self.player1.units else self.player2
-                        self.combat_log.append({'type': 'battle_song', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Barde.mp3'})
+                        self.combat_log.append({'type': 'battle_song', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Bard_Buff.mp3', 'player_owner': action_owner})
                         for ally in allied_player.units:
                             if not ally.is_defeated and ally.id != attacker.id and not any(e['type'] == 'battle_song' for e in ally.status_effects):
                                 ally.status_effects.append({'type': 'battle_song', 'duration': 3})
@@ -202,12 +206,12 @@ class Game:
                         opponent_player = self.player2 if attacker in self.player1.units else self.player1
                         target = next((u for u in opponent_player.units if not u.is_defeated and not u.is_hidden), None)
                         if target:
-                            self._apply_damage(attacker, target, int(attacker.attack * 2.0), ignores_shield=True, sound='Schurke.mp3')
+                            self._apply_damage(attacker, target, int(attacker.attack * 2.0), ignores_shield=True)
                         attacker.is_hidden = False
-                        self.combat_log.append({'type': 'unhide', 'actor_id': attacker.id, 'actor_name': attacker.class_name})
+                        self.combat_log.append({'type': 'unhide', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Schurke.mp3', 'player_owner': action_owner})
                     elif attacker.ability_cooldown == 0:
                         attacker.is_hidden = True
-                        self.combat_log.append({'type': 'hide', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Schurke.mp3'})
+                        self.combat_log.append({'type': 'hide', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Rouge_shadow.mp3', 'player_owner': action_owner})
                         attacker.ability_cooldown = 2
                     else:
                         self._perform_standard_attack(attacker)
@@ -215,7 +219,7 @@ class Game:
                 else: # Barbar and Abenteurer
                     if attacker.class_name == 'Barbar' and attacker.ability_cooldown == 0:
                         attacker.status_effects.append({'type': 'frenzy', 'duration': 3})
-                        self.combat_log.append({'type': 'frenzy_start', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Barbar.mp3'})
+                        self.combat_log.append({'type': 'frenzy_start', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Barbarian_Warcry.mp3', 'player_owner': action_owner})
                         attacker.ability_cooldown = 4
 
                     self._perform_standard_attack(attacker)
@@ -248,16 +252,23 @@ class Game:
             'type': 'attack', 'attacker_id': attacker.id, 'attacker_name': attacker.class_name,
             'target_id': target.id, 'target_name': target.class_name, 'damage': damage,
             'target_hp_after': target.hp, 'target_shield_after': target.shield, 'is_splash': is_splash,
-            'ignores_shield': ignores_shield, 'target_max_hp': target.max_hp
+            'ignores_shield': ignores_shield, 'target_max_hp': target.max_hp,
+            'player_owner': "player1" if attacker in self.player1.units else "player2"
         }
         if sound:
             log_entry['sound'] = sound
+        self.combat_log.append(log_entry)
+
         if target.hp == 0:
             target.is_defeated = True
-            log_entry['defeated'] = True
-            # Overwrite attack sound with dying sound if defeated
-            log_entry['sound'] = f"Dying_0{random.randint(1, 3)}.mp3"
-        self.combat_log.append(log_entry)
+            defeated_player_owner = "player1" if target in self.player1.units else "player2"
+            self.combat_log.append({
+                'type': 'defeated',
+                'target_id': target.id,
+                'target_name': target.class_name,
+                'sound': f"Dying_0{random.randint(1, 3)}.mp3",
+                'player_owner': defeated_player_owner
+            })
 
     def _get_adjacent_units(self, target_unit, opponent_player):
         if not target_unit.position:
