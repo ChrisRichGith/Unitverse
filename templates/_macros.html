@@ -48,9 +48,23 @@
         {% elif action == 'combat' %}
              <div class="shield-display" style="color: #48cae4; font-weight: bold;"></div>
         {% elif action == 'survivor' %}
-             <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
-                <button type="submit">In Kaserne</button>
-            </form>
+            {% if unit.is_in_barracks %}
+                <button type="button" disabled>Bereits in Kaserne</button>
+            {% elif game.player1.barracks|length >= 3 %}
+                <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: flex; flex-direction: column; gap: 0.5em;">
+                    <select name="replace_id" class="replace-select">
+                        <option value="" disabled selected>Ersetzen...</option>
+                        {% for barracks_unit in game.player1.barracks %}
+                            <option value="{{ barracks_unit.id }}">{{ barracks_unit.class_name }} (Lvl {{ barracks_unit.level }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Bestätigen</button>
+                </form>
+            {% else %}
+                <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
+                    <button type="submit">In Kaserne</button>
+                </form>
+            {% endif %}
         {% endif %}
     </div>
 </div>

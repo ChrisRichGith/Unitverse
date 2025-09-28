@@ -1,7 +1,7 @@
 import uuid
 import json
 import os
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, request
 import random
 
 # --- DATA CLASSES ---
@@ -325,8 +325,11 @@ class Game:
             if surviving_units:
                 # Distribute the XP pool among the survivors
                 xp_per_survivor = xp_pool // len(surviving_units)
+                barracks_ids = {u.id for u in self.player1.barracks}
                 for unit in surviving_units:
                     unit.xp += xp_per_survivor
+                    # Add a flag to indicate if the unit is already in the barracks
+                    unit.is_in_barracks = unit.id in barracks_ids
                     self.survivors.append(unit)
 
 # --- UNIT GENERATION ---
@@ -478,14 +481,24 @@ def load_game():
 def move_to_barracks(unit_id):
     if game.game_state != "finished":
         return redirect(url_for('index'))
+
     survivor = next((u for u in game.survivors if u.id == unit_id), None)
-    if survivor and len(game.player1.barracks) < 3:
-        if not any(u.id == survivor.id for u in game.player1.barracks):
-            barracks_copy = Unit.from_dict(survivor.to_dict())
-            barracks_copy.hp = barracks_copy.max_hp
-            game.player1.barracks.append(barracks_copy)
-            game.survivors.remove(survivor)
-            save_data(game.player1)
+    replace_id = request.form.get('replace_id')
+
+    if survivor:
+        # If we are replacing a unit, remove the old one first
+        if replace_id:
+            game.player1.barracks = [u for u in game.player1.barracks if u.id != replace_id]
+
+        # Add the new unit if there's space
+        if len(game.player1.barracks) < 3:
+            if not any(u.id == survivor.id for u in game.player1.barracks):
+                barracks_copy = Unit.from_dict(survivor.to_dict())
+                barracks_copy.hp = barracks_copy.max_hp
+                game.player1.barracks.append(barracks_copy)
+                game.survivors.remove(survivor)
+                save_data(game.player1)
+
     return render_template('combat_replay.html', game=game, combat_log_json=json.dumps([log for log in game.combat_log]), show_animation=False, class_icons=CLASS_ICONS)
 
 @app.route('/barracks')
@@ -524,6 +537,7 @@ def save_barracks():
     if player:
         save_data(player)
     return redirect(url_for('barracks'))
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

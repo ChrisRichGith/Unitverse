@@ -215,6 +215,15 @@
             flex-wrap: wrap;
         }
 
+        .replace-select {
+            width: 100%;
+            padding: 0.4em;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: #eee;
+        }
+
         #results-area {
             background: #1e1e1e;
             color: #e0e0e0;
@@ -282,7 +291,7 @@
             <h4>Überlebende Einheiten:</h4>
             <div class="survivor-container">
             {% for unit in game.survivors %}
-                {{ render_unit_card(unit, class_icons, action='survivor') }}
+                {{ render_unit_card(unit, class_icons, action='survivor', game=game) }}
             {% endfor %}
             </div>
         {% endif %}
