@@ -24,8 +24,7 @@
             flex-direction: column;
         }
         .player-area {
-            /* width is now controlled by flex container */
-            margin: 0.2em 0; /* Reduced vertical margin */
+            margin: 0.2em 0;
             padding: 1em;
             border: 2px solid #444;
             border-radius: 12px;
@@ -54,59 +53,22 @@
             border: 1px solid #666;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
             padding: 4px;
-            min-height: 160px; /* Adjust height for the new card */
+            min-height: 160px;
             transition: all 0.3s ease;
             border-radius: 8px;
-            position: relative; /* For animation z-index */
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .unit-slot.defeated { background-color: #222 !important; text-decoration: line-through; opacity: 0.4; box-shadow: none; }
-        .logs-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 1em;
-        }
-        .log-area {
-            background-color: #222;
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 0.5em;
-            height: 200px;
-        }
-        .log-area h4 {
-            margin: 0 0 0.5em;
-            text-align: center;
-            font-size: 0.9em;
-            color: #aaa;
-        }
-        .log-content {
-            height: calc(100% - 30px);
-            overflow-y: auto;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9em;
-        }
+        .logs-container { flex: 1; display: flex; flex-direction: column; gap: 1em; }
+        .log-area { background-color: #222; border: 1px solid #555; border-radius: 8px; padding: 0.5em; height: 200px; }
+        .log-area h4 { margin: 0 0 0.5em; text-align: center; font-size: 0.9em; color: #aaa; }
+        .log-content { height: calc(100% - 30px); overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
         .log-area p { margin: 0.3em 0; }
 
         /* --- Effect Styles --- */
-        @keyframes pulse-preview {
-            0% { box-shadow: inset 0 0 8px 2px #8a2be2; }
-            50% { box-shadow: inset 0 0 14px 4px #9932cc; }
-            100% { box-shadow: inset 0 0 8px 2px #8a2be2; }
-        }
-        @keyframes pulse-self-action {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        .splash-preview {
-            animation: pulse-preview 0.6s ease-in-out;
-        }
-        .self-action {
-            animation: pulse-self-action 0.4s ease-in-out;
-        }
         .attacking { box-shadow: inset 0 0 10px 3px #39e65f; }
         .attacked { box-shadow: inset 0 0 10px 3px #e63946; }
         .healing { box-shadow: inset 0 0 10px 3px #9ef01a; }
@@ -116,122 +78,27 @@
         .hidden { opacity: 0.4; border-style: dashed; background-color: #444; }
 
         #opponent-board { transform: rotate(180deg); }
-        #opponent-board .unit-slot { transform: rotate(180deg); } /* Rotate slot content back */
+        #opponent-board .unit-slot { transform: rotate(180deg); }
 
-        .health-bar-container {
-            background-color: #111;
-            border-radius: 3px;
-            margin: 0.5em 0.6em 0;
-            height: 8px;
-            border: 1px solid #000;
-        }
-        .health-bar {
-            background: linear-gradient(to right, #28a745, #218838);
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.5s ease-in-out;
-        }
-        .unit-card {
-            border: 1px solid #777;
-            border-radius: 10px;
-            background: linear-gradient(145deg, #4a4a4a, #3a3a3a);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.7);
-            text-align: left;
-            font-size: 0.75em;
-            width: 130px; /* Further reduced width for compact layout */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            margin: auto;
-        }
-        .unit-card-header {
-            background-color: rgba(0,0,0,0.3);
-            padding: 0.5em;
-            border-top-left-radius: 9px;
-            border-top-right-radius: 9px;
-        }
-        .unit-card-header strong {
-            font-size: 1.1em;
-            color: #00c3ff;
-            white-space: nowrap;
-        }
-        .unit-card-body {
-            padding: 0.6em;
-            line-height: 1.4;
-        }
-        .unit-card-body .stats {
-            font-weight: bold;
-            color: #eee;
-            margin-bottom: 0.4em;
-        }
-        .unit-card-body .attributes {
-            font-size: 0.9em;
-            color: #bbb;
-            line-height: 1.3;
-        }
-        .unit-card-footer {
-            padding: 0.6em;
-            background-color: rgba(0,0,0,0.2);
-            border-bottom-left-radius: 9px;
-            border-bottom-right-radius: 9px;
-            text-align: center;
-        }
-        .unit-card-footer .cost, .unit-card-footer .xp, .unit-card-footer .hp-current {
-            font-size: 0.95em;
-            margin-bottom: 0.5em;
-            color: #ddd;
-        }
-        .unit-card-footer button {
-            width: 100%;
-            font-size: 0.9em;
-            padding: 0.5em 0.3em;
-        }
-        .status-effects-container {
-            min-height: 20px;
-            display: flex;
-            gap: 4px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 0.5em;
-        }
-        .status-effect {
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            font-weight: bold;
-            color: #fff;
-        }
-        .buff {
-            background-color: #28a745;
-        }
-        .debuff {
-            background-color: #dc3545;
-        }
+        .health-bar-container { background-color: #111; border-radius: 3px; margin: 0.5em 0.6em 0; height: 8px; border: 1px solid #000; }
+        .health-bar { background: linear-gradient(to right, #28a745, #218838); height: 100%; border-radius: 3px; transition: width 0.5s ease-in-out; }
+        .unit-card { border: 1px solid #777; border-radius: 10px; background: linear-gradient(145deg, #4a4a4a, #3a3a3a); box-shadow: 0 4px 8px rgba(0,0,0,0.7); text-align: left; font-size: 0.75em; width: 130px; display: flex; flex-direction: column; justify-content: space-between; margin: auto; }
+        .unit-card-header { background-color: rgba(0,0,0,0.3); padding: 0.5em; border-top-left-radius: 9px; border-top-right-radius: 9px; }
+        .unit-card-header strong { font-size: 1.1em; color: #00c3ff; white-space: nowrap; }
+        .unit-card-body { padding: 0.6em; line-height: 1.4; }
+        .unit-card-body .stats { font-weight: bold; color: #eee; margin-bottom: 0.4em; }
+        .unit-card-body .attributes { font-size: 0.9em; color: #bbb; line-height: 1.3; }
+        .unit-card-footer { padding: 0.6em; background-color: rgba(0,0,0,0.2); border-bottom-left-radius: 9px; border-bottom-right-radius: 9px; text-align: center; }
+        .unit-card-footer button { width: 100%; font-size: 0.9em; padding: 0.5em 0.3em; }
+        .status-effects-container { min-height: 20px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-bottom: 0.5em; }
+        .status-effect { padding: 2px 5px; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: #fff; }
+        .buff { background-color: #28a745; }
+        .debuff { background-color: #dc3545; }
 
-        .survivor-container {
-            display: flex;
-            gap: 1em;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
+        .survivor-container { display: flex; gap: 1em; justify-content: center; flex-wrap: wrap; }
+        .replace-select { width: 100%; padding: 0.4em; border-radius: 4px; border: 1px solid #555; background-color: #333; color: #eee; }
 
-        .replace-select {
-            width: 100%;
-            padding: 0.4em;
-            border-radius: 4px;
-            border: 1px solid #555;
-            background-color: #333;
-            color: #eee;
-        }
-
-        #results-area {
-            background: #1e1e1e;
-            color: #e0e0e0;
-            border: 2px solid #00aaff;
-            box-shadow: 0 0 20px rgba(0, 170, 255, 0.5);
-            border-radius: 10px;
-            padding: 2em;
-        }
+        #results-area { background: #1e1e1e; color: #e0e0e0; border: 2px solid #00aaff; box-shadow: 0 0 20px rgba(0, 170, 255, 0.5); border-radius: 10px; padding: 2em; }
         button { font-size: 1.1em; padding: 0.5em 1em; margin: 0.5em; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
     </style>
 </head>
@@ -319,41 +186,31 @@
                         resolve();
                         return;
                     }
-
                     const attackerRect = attacker.getBoundingClientRect();
                     const targetRect = target.getBoundingClientRect();
-
                     let dx = targetRect.left - attackerRect.left + (targetRect.width - attackerRect.width) / 2;
                     let dy = targetRect.top - attackerRect.top + (targetRect.height - attackerRect.height) / 2;
-
-                    // If attacker is on the rotated opponent board, invert the translation
                     if (attacker.closest('#opponent-board')) {
                         dx = -dx;
                         dy = -dy;
                     }
-
                     attacker.style.zIndex = 100;
                     attacker.style.transition = 'transform 0.25s ease-out';
-
-                    const isOpponent = attacker.closest('#opponent-board');
                     let moveTransform = `translate(${dx}px, ${dy}px)`;
-                    if (isOpponent) {
+                    if (attacker.closest('#opponent-board')) {
                         moveTransform += ' rotate(180deg)';
                     }
                     attacker.style.transform = moveTransform;
-
                     const onHit = () => {
                         attacker.removeEventListener('transitionend', onHit);
                         target.classList.add('attacked');
-
                         setTimeout(() => {
                             attacker.style.transition = 'transform 0.25s ease-in';
                             let returnTransform = 'translate(0, 0)';
-                            if (isOpponent) {
+                            if (attacker.closest('#opponent-board')) {
                                 returnTransform += ' rotate(180deg)';
                             }
                             attacker.style.transform = returnTransform;
-
                             const onReturn = () => {
                                 attacker.removeEventListener('transitionend', onReturn);
                                 attacker.style.zIndex = '';
@@ -380,25 +237,22 @@
                     document.getElementById('results-area').style.display = 'block';
                     return;
                 }
-
                 const step = combatLog[currentStep];
                 const p = document.createElement('p');
-                let stepDelay = 2000; // Increased delay to allow sounds to play
+                let stepDelay = 2000;
 
-                // Play sound if one is associated with this log step
                 if (step.sound) {
                     playSound(step.sound);
                 }
 
-                document.querySelectorAll('.attacking, .attacked, .healing, .shielding, .splash-preview, .self-action').forEach(el => {
-                    el.classList.remove('attacking', 'attacked', 'healing', 'shielding', 'splash-preview', 'self-action');
+                document.querySelectorAll('.attacking, .attacked, .healing, .shielding, .splash-preview, .frenzy, .buffed, .hidden').forEach(el => {
+                    el.classList.remove('attacking', 'attacked', 'healing', 'shielding', 'splash-preview', 'frenzy', 'buffed', 'hidden');
                 });
 
                 if (step.type === 'active_player_turn') {
                     const player1Area = document.getElementById('player1-area');
                     const player2Area = document.getElementById('player2-area');
                     let playerName = step.player_id === 'player1' ? {{ game.player1.name|tojson }} : {{ game.player2.name|tojson }};
-
                     if (step.player_id === 'player1') {
                         player1Area.classList.add('active-player-area');
                         player2Area.classList.remove('active-player-area');
@@ -407,21 +261,12 @@
                         player1Area.classList.remove('active-player-area');
                     }
                     p.innerHTML = `<em style="color: #00c3ff;">-- ${playerName} ist am Zug --</em>`;
-                    stepDelay = 400; // Short delay to make the highlight noticeable
+                    stepDelay = 400;
                 } else if (step.type === 'round') {
                     p.innerHTML = `<strong>--- Runde ${step.number} ---</strong>`;
-                } else if (step.type === 'splash_preview') {
-                    p.textContent = `Magier bereitet einen Flächenzauber vor...`;
-                    const attackerSlot = document.getElementById(step.attacker_id);
-                    if (attackerSlot) attackerSlot.classList.add('attacking');
-                    step.target_ids.forEach(targetId => {
-                        const targetSlot = document.getElementById(targetId);
-                        if (targetSlot) targetSlot.classList.add('splash-preview');
-                    });
                 } else if (step.type === 'attack') {
                     const attackerSlot = document.getElementById(step.attacker_id);
                     const targetSlot = document.getElementById(step.target_id);
-
                     if (step.is_splash) {
                         p.textContent = `${step.target_name} erleidet ${step.damage} Flächenschaden.`;
                         if (targetSlot) targetSlot.classList.add('attacked');
@@ -431,33 +276,19 @@
                             await animateAttack(attackerSlot, targetSlot);
                         }
                     }
-
                     if (attackerSlot) attackerSlot.classList.add('attacking');
                     if (targetSlot) {
-                        if (step.is_splash && !targetSlot.classList.contains('attacked')) {
-                            targetSlot.classList.add('attacked');
-                        }
-                        const hpSpan = targetSlot.querySelector('.hp-val');
-                        const shieldSpan = targetSlot.querySelector('.shield-display');
                         const healthBar = targetSlot.querySelector('.health-bar');
-
-                        if (hpSpan) hpSpan.textContent = step.target_hp_after;
-                        if (shieldSpan) shieldSpan.textContent = step.target_shield_after > 0 ? `+${step.target_shield_after} Schild` : '';
                         if (healthBar && step.target_max_hp > 0) {
                             healthBar.style.width = `${(step.target_hp_after / step.target_max_hp) * 100}%`;
                         }
                     }
                 } else if (step.type === 'heal') {
                     p.textContent = `${step.healer_name} heilt ${step.target_name} für ${step.heal_amount} HP.`;
-                    const healerSlot = document.getElementById(step.healer_id);
                     const targetSlot = document.getElementById(step.target_id);
-                    if (healerSlot) healerSlot.classList.add('attacking');
                     if (targetSlot) {
                         targetSlot.classList.add('healing');
-                        const hpSpan = targetSlot.querySelector('.hp-val');
                         const healthBar = targetSlot.querySelector('.health-bar');
-
-                        if (hpSpan) hpSpan.textContent = step.target_hp_after;
                         if (healthBar && step.target_max_hp > 0) {
                             healthBar.style.width = `${(step.target_hp_after / step.target_max_hp) * 100}%`;
                         }
@@ -472,7 +303,7 @@
                     p.textContent = `${step.actor_name} erhält einen Schild von ${step.shield_amount}.`;
                     const actorSlot = document.getElementById(step.actor_id);
                     if (actorSlot) {
-                        actorSlot.classList.add('shielding', 'self-action');
+                        actorSlot.classList.add('shielding');
                         const shieldSpan = actorSlot.querySelector('.shield-display');
                         if (shieldSpan) shieldSpan.textContent = `+${step.shield_total} Schild`;
                     }
@@ -480,38 +311,32 @@
                     p.textContent = `${step.actor_name} verfällt in Raserei!`;
                     const actorSlot = document.getElementById(step.actor_id);
                     if (actorSlot) {
-                        actorSlot.classList.add('frenzy', 'self-action');
-                        const unitCard = actorSlot.querySelector('.unit-card');
-                        if (unitCard) {
-                            const container = unitCard.querySelector('.status-effects-container');
-                            if (container) {
-                                const effectDiv = document.createElement('div');
-                                effectDiv.className = 'status-effect buff';
-                                effectDiv.dataset.effectType = 'frenzy';
-                                effectDiv.textContent = 'Frenzy (3)'; // Duration is hardcoded in backend
-                                container.appendChild(effectDiv);
-                            }
+                        actorSlot.classList.add('frenzy');
+                        const container = actorSlot.querySelector('.status-effects-container');
+                        if (container) {
+                            const effectDiv = document.createElement('div');
+                            effectDiv.className = 'status-effect buff';
+                            effectDiv.dataset.effectType = 'frenzy';
+                            effectDiv.textContent = 'Frenzy (3)';
+                            container.appendChild(effectDiv);
                         }
                     }
                 } else if (step.type === 'battle_song') {
                     p.textContent = `${step.actor_name} spielt ein Kampflied! Alle Verbündeten sind gestärkt.`;
                     const actorSlot = document.getElementById(step.actor_id);
                     if (actorSlot) {
-                        actorSlot.classList.add('attacking'); // Removed 'self-action' to prevent rotation bug
+                        actorSlot.classList.add('attacking');
                         const allies = actorSlot.closest('.player-area').querySelectorAll('.unit-slot');
                         allies.forEach(allySlot => {
                             if (allySlot.id && allySlot.id !== step.actor_id) {
                                 allySlot.classList.add('buffed');
-                                const unitCard = allySlot.querySelector('.unit-card');
-                                if (unitCard) {
-                                    const container = unitCard.querySelector('.status-effects-container');
-                                    if (container) {
-                                        const effectDiv = document.createElement('div');
-                                        effectDiv.className = 'status-effect buff';
-                                        effectDiv.dataset.effectType = 'battle_song';
-                                        effectDiv.textContent = 'Battle Song (3)';
-                                        container.appendChild(effectDiv);
-                                    }
+                                const container = allySlot.querySelector('.status-effects-container');
+                                if (container) {
+                                    const effectDiv = document.createElement('div');
+                                    effectDiv.className = 'status-effect buff';
+                                    effectDiv.dataset.effectType = 'battle_song';
+                                    effectDiv.textContent = 'Battle Song (3)';
+                                    container.appendChild(effectDiv);
                                 }
                             }
                         });
@@ -520,25 +345,17 @@
                     p.textContent = `${step.effect.charAt(0).toUpperCase() + step.effect.slice(1)} von ${step.unit_name} endet.`;
                     const unitSlot = document.getElementById(step.unit_id);
                     if (unitSlot) {
-                        // Remove the visual border effect
                         let cssClass = '';
                         if (step.effect === 'frenzy') cssClass = 'frenzy';
                         if (step.effect === 'battle_song') cssClass = 'buffed';
                         if (cssClass) unitSlot.classList.remove(cssClass);
-
-                        // Remove the status effect tag from the card
-                        const unitCard = unitSlot.querySelector('.unit-card');
-                        if (unitCard) {
-                            const effectDiv = unitCard.querySelector(`.status-effect[data-effect-type="${step.effect}"]`);
-                            if (effectDiv) {
-                                effectDiv.remove();
-                            }
-                        }
+                        const effectDiv = unitSlot.querySelector(`.status-effect[data-effect-type="${step.effect}"]`);
+                        if (effectDiv) effectDiv.remove();
                     }
                 } else if (step.type === 'hide') {
                     p.textContent = `${step.actor_name} versteckt sich in den Schatten!`;
                     const actorSlot = document.getElementById(step.actor_id);
-                    if (actorSlot) actorSlot.classList.add('hidden', 'self-action');
+                    if (actorSlot) actorSlot.classList.add('hidden');
                 } else if (step.type === 'unhide') {
                     p.textContent = `${step.actor_name} erscheint für einen Hinterhalt!`;
                     const actorSlot = document.getElementById(step.actor_id);
@@ -552,7 +369,6 @@
                     player2Log.appendChild(p);
                     player2Log.scrollTop = player2Log.scrollHeight;
                 } else {
-                    // For events that apply to both (like round announcements)
                     const p1 = p.cloneNode(true);
                     const p2 = p.cloneNode(true);
                     player1Log.appendChild(p1);

@@ -43,21 +43,20 @@
         {% elif action == 'upgrade' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
         {% elif action == 'board' %}
-            <form action="/return_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
-                <button type="submit" class="return-button" style="background-color: #6c757d; font-size: 0.8em; padding: 0.3em 0.5em;">Zurück</button>
-            </form>
+            {% if unit.from_barracks %}
+                <form action="{{ url_for('return_to_barracks', unit_id=unit.id) }}" method="post" style="margin-top: 5px;">
+                    <button type="submit" class="return-button" style="font-size: 0.8em; padding: 0.3em 0.5em; background-color: #6c757d;">Zurück</button>
+                </form>
+            {% endif %}
         {% elif action == 'combat' %}
              <div class="shield-display" style="color: #48cae4; font-weight: bold;"></div>
         {% elif action == 'survivor' %}
             {% if unit.is_in_barracks %}
-                {# This unit exists in barracks. Always show the button to allow XP updates. #}
                 <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
                     <button type="submit" style="background-color: #28a745;">XP Aktualisieren</button>
                 </form>
             {% else %}
-                {# This is a new survivor not currently in the barracks. #}
                 {% if game.player1.barracks|length >= 3 %}
-                    {# Barracks is full, show replace options. #}
                     <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: flex; flex-direction: column; gap: 0.5em;">
                         <select name="replace_id" class="replace-select">
                             <option value="" disabled selected>Ersetzen...</option>
@@ -68,7 +67,6 @@
                         <button type="submit">Bestätigen</button>
                     </form>
                 {% else %}
-                    {# Barracks has space, just add the unit. #}
                     <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
                         <button type="submit">In Kaserne</button>
                     </form>

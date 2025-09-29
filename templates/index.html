@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+    {% from "_macros.html" import render_unit_card %}
     <meta charset="UTF-8">
     <title>UnitVerse - Neuanfang</title>
     <style>
@@ -59,7 +60,7 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.7);
             text-align: left;
             font-size: 0.8em;
-            width: 160px; /* Adjusted width for 3-column layout */
+            width: 160px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -151,14 +152,15 @@
             text-align: center;
             font-size: 0.9em;
             color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .slot strong { color: #00aaff; font-size: 1.1em; }
         #opponent-board { transform: rotate(180deg); }
         #opponent-board .slot { transform: rotate(180deg); }
     </style>
 </head>
-{% from "_macros.html" import render_unit_card %}
-
 <body>
     {% if game.game_state == 'title_screen' %}
     <div class="title-screen">
@@ -194,7 +196,6 @@
             <div class="team-panel">
                 <h2>Gegner</h2>
                 <div class="board" id="opponent-board">
-                    {# AI board is empty until combat starts, but this sets up the layout #}
                     {% for r in range(2) %}{% for c in range(3) %}<div class="slot">(Leer)</div>{% endfor %}{% endfor %}
                 </div>
             </div>
