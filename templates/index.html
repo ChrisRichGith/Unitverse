@@ -185,7 +185,7 @@
             <h3>Kaserne</h3>
             {% if game.player1.barracks %}
                 {% for unit in game.player1.barracks %}
-                    {{ render_unit_card(unit, class_icons, action='deploy') }}
+                    {{ render_unit_card(unit, class_icons, action='deploy', game=game) }}
                 {% endfor %}
             {% else %}
                 <p>Leer</p>

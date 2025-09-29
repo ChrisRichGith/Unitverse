@@ -38,7 +38,28 @@
             </form>
         {% elif action == 'deploy' %}
             <form action="/deploy_unit/{{ unit.id }}" method="post">
-                <button type="submit">Einsetzen</button>
+                {% set ns = namespace(has_empty_slot=false) %}
+                {% for pos, u in game.player1.board.items() %}
+                    {% if u is none %}
+                        {% set ns.has_empty_slot = true %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if ns.has_empty_slot %}
+                    <div class="deploy-options" style="padding: 5px 0;">
+                        {% for pos, u in game.player1.board.items() %}
+                            {% if u is none %}
+                                <label style="display: block; text-align: left; margin: 2px 10px; font-size: 0.9em;">
+                                    <input type="radio" name="slot" value="{{ pos }}" required> Pos: {{ pos.replace(',', ' | ') }}
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <button type="submit">Einsetzen</button>
+                {% else %}
+                    <p style="font-size: 0.9em; color: #aaa;">Board ist voll.</p>
+                    <button type="submit" disabled>Einsetzen</button>
+                {% endif %}
             </form>
         {% elif action == 'upgrade' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>

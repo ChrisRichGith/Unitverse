@@ -282,13 +282,13 @@ def buy_unit(unit_id):
 @app.route('/deploy_unit/<unit_id>', methods=['POST'])
 def deploy_unit(unit_id):
     unit_to_deploy = next((u for u in game.player1.barracks if u.id == unit_id), None)
-    if unit_to_deploy and not any(u.id == unit_id for u in game.player1.units):
-        slot = next((pos for pos, unit in game.player1.board.items() if unit is None), None)
-        if slot:
-            deployed_unit = Unit.from_dict(unit_to_deploy.to_dict())
-            deployed_unit.from_barracks = True
-            game.player1.units.append(deployed_unit)
-            game.player1.board[slot] = deployed_unit
+    slot = request.form.get('slot')
+    if unit_to_deploy and not any(u.id == unit_id for u in game.player1.units) and slot and slot in game.player1.board and game.player1.board[slot] is None:
+        deployed_unit = Unit.from_dict(unit_to_deploy.to_dict())
+        deployed_unit.from_barracks = True
+        deployed_unit.position = slot
+        game.player1.units.append(deployed_unit)
+        game.player1.board[slot] = deployed_unit
     return redirect(url_for('index'))
 
 @app.route('/return_to_barracks/<unit_id>', methods=['POST'])
