@@ -39,9 +39,12 @@ class Unit:
         self.cost = sum(self.attributes.values()) // 2
 
     def add_xp(self, amount):
-        """Adds XP to the unit and handles leveling up."""
+        """Adds XP to the unit."""
         if self.is_defeated: return
         self.xp += amount
+
+    def level_up_if_possible(self):
+        """Checks for and applies level-ups if the unit has enough XP."""
         leveled_up = False
         while self.xp >= self.level * 100:
             self.xp -= self.level * 100
@@ -51,7 +54,9 @@ class Unit:
             num_to_upgrade = min(len(stats_to_upgrade), 2)
             for stat in random.sample(stats_to_upgrade, num_to_upgrade):
                 self.attributes[stat] += 1
-        if leveled_up: self.recalculate_stats()
+        if leveled_up:
+            self.recalculate_stats()
+        return leveled_up
 
     def to_dict(self):
         return { "id": self.id, "level": self.level, "xp": self.xp, "attributes": self.attributes }
@@ -290,6 +295,8 @@ def deploy_unit(unit_id):
         deployed_unit.position = slot
         game.player1.units.append(deployed_unit)
         game.player1.board[slot] = deployed_unit
+        game.player1.barracks = [u for u in game.player1.barracks if u.id != unit_id]
+        save_data(game.player1)
     return redirect(url_for('index'))
 
 @app.route('/return_to_barracks/<unit_id>', methods=['POST'])
@@ -301,6 +308,9 @@ def return_to_barracks(unit_id):
             if unit and unit.id == unit_id:
                 game.player1.board[pos] = None
                 break
+        if not any(u.id == unit_id for u in game.player1.barracks):
+            game.player1.barracks.append(unit_to_return)
+            save_data(game.player1)
     return redirect(url_for('index'))
 
 @app.route('/start_combat', methods=['POST'])
@@ -339,6 +349,18 @@ def move_to_barracks(unit_id):
         game.survivors.remove(survivor)
         save_data(game.player1)
     return render_template('combat_replay.html', game=game, combat_log_json=json.dumps(game.combat_log), show_animation=False, class_icons=CLASS_ICONS)
+
+@app.route('/level_up_unit/<unit_id>', methods=['POST'])
+def level_up_unit(unit_id):
+    player_data = load_data()
+    if not player_data:
+        return redirect(url_for('barracks'))
+    unit_to_level_up = next((u for u in player_data.barracks if u.id == unit_id), None)
+    if unit_to_level_up:
+        if unit_to_level_up.level_up_if_possible():
+            save_data(player_data)
+    return redirect(url_for('barracks'))
+
 
 @app.route('/barracks')
 def barracks():

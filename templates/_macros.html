@@ -63,6 +63,11 @@
             </form>
         {% elif action == 'upgrade' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
+            {% if unit.xp >= unit.level * 100 %}
+            <form action="/level_up_unit/{{ unit.id }}" method="post">
+                <button type="submit" style="background-color: #ffc107; color: #000;">Level Up!</button>
+            </form>
+            {% endif %}
         {% elif action == 'board' %}
             {% if unit.from_barracks %}
                 <form action="{{ url_for('return_to_barracks', unit_id=unit.id) }}" method="post" style="margin-top: 5px;">
