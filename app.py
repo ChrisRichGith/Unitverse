@@ -290,12 +290,13 @@ def deploy_unit(unit_id):
     unit_to_deploy = next((u for u in game.player1.barracks if u.id == unit_id), None)
     slot = request.form.get('slot')
     if unit_to_deploy and not any(u.id == unit_id for u in game.player1.units) and slot and slot in game.player1.board and game.player1.board[slot] is None:
-        deployed_unit = Unit.from_dict(unit_to_deploy.to_dict())
-        deployed_unit.from_barracks = True
-        deployed_unit.position = slot
-        game.player1.units.append(deployed_unit)
-        game.player1.board[slot] = deployed_unit
-        game.player1.barracks = [u for u in game.player1.barracks if u.id != unit_id]
+        # Move the actual unit object to the board, don't create a copy.
+        unit_to_deploy.from_barracks = True
+        unit_to_deploy.position = slot
+        game.player1.units.append(unit_to_deploy)
+        game.player1.board[slot] = unit_to_deploy
+        # Remove the unit from the barracks list.
+        game.player1.barracks.remove(unit_to_deploy)
         save_data(game.player1)
     return redirect(url_for('index'))
 

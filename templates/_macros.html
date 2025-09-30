@@ -79,6 +79,7 @@
         {% elif action == 'combat' %}
              <div class="shield-display" style="color: #48cae4; font-weight: bold;"></div>
         {% elif action == 'survivor' %}
+            <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
             {% if unit.is_in_barracks %}
                 <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
                     <button type="submit" style="background-color: #28a745;">XP Aktualisieren</button>
