@@ -18,12 +18,17 @@
             background-color: #1a1a1a;
             color: #e0e0e0;
         }
-        .title-screen {
-            padding: 2em;
-            border: 1px solid #444;
-            border-radius: 10px;
-            display: inline-block;
-            background-color: #2a2a2a;
+        .title-header {
+            padding-top: 20vh;
+            color: white;
+            text-shadow: 2px 2px 8px #000;
+        }
+        .bottom-menu {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            width: 100%;
+            text-align: center;
         }
         button {
             font-size: 1.2em;
@@ -41,9 +46,9 @@
             opacity: 0.6;
         }
         .prep-container { display: flex; width: 100%; justify-content: space-around; align-items: flex-start; }
-        .side-panel { width: 25%; background-color: #252525; padding: 1em; border-radius: 8px; }
+        .side-panel { width: 25%; background-color: rgba(37, 37, 37, 0.85); padding: 1em; border-radius: 8px; }
         .center-panels { display: flex; flex-direction: column; align-items: center; width: 45%; }
-        .team-panel { width: 100%; margin-bottom: 2em; }
+        .team-panel { width: 100%; margin-bottom: 2em; background-color: rgba(37, 37, 37, 0.85); padding: 1em; border-radius: 8px;}
         .board {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -168,8 +173,9 @@
 </head>
 <body>
     {% if game.game_state == 'title_screen' %}
-    <div class="title-screen">
-        <h1>UnitVerse</h1>
+    <div class="title-header">
+    </div>
+    <div class="bottom-menu">
         {% if save_exists %}
             <form action="/start_game" method="post" style="display: inline;">
                 <button type="submit">Nächste Runde</button>
@@ -178,7 +184,7 @@
                 <button type="submit" style="background-color: #6c757d;">Neues Spiel</button>
             </form>
         {% else %}
-            <form action="/start_game" method="post">
+            <form action="/start_game" method="post" style="display: inline;">
                 <button type="submit">Spiel starten</button>
             </form>
         {% endif %}
