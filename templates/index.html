@@ -215,8 +215,9 @@
                 <p>Gold: {{ game.player1.gold }}</p>
                 <div class="board">
                     {% for r in range(2) %}{% for c in range(3) %}
-                        <div class="slot">
-                        {% set unit = game.player1.board.get(r ~ ',' ~ c) %}
+                        {% set slot_id = r ~ ',' ~ c %}
+                        {% set unit = game.player1.board.get(slot_id) %}
+                        <div class="slot" {% if not unit %}data-slot-id="{{ slot_id }}"{% endif %}>
                         {% if unit %}
                             {{ render_unit_card(unit, class_icons, action='board') }}
                         {% else %}
@@ -242,6 +243,52 @@
             {% endfor %}
         </div>
     </div>
+    <form id="deploy-form" action="" method="post" style="display: none;">
+        <input type="hidden" name="slot" id="slot-input">
+    </form>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let draggedData = null;
+
+            document.querySelectorAll('.unit-card[draggable="true"]').forEach(card => {
+                card.addEventListener('dragstart', (e) => {
+                    draggedData = {
+                        unitId: card.dataset.unitId,
+                        source: 'barracks'
+                    };
+                    e.dataTransfer.setData('text/plain', card.dataset.unitId);
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+            });
+
+            document.querySelectorAll('.slot[data-slot-id]').forEach(slot => {
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
+                });
+
+                slot.addEventListener('dragleave', (e) => {
+                    e.currentTarget.style.backgroundColor = '';
+                });
+
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.currentTarget.style.backgroundColor = '';
+
+                    if (draggedData && draggedData.source === 'barracks') {
+                        const unitId = draggedData.unitId;
+                        const slotId = e.currentTarget.dataset.slotId;
+
+                        const form = document.getElementById('deploy-form');
+                        form.action = `/deploy_unit/${unitId}`;
+                        document.getElementById('slot-input').value = slotId;
+                        form.submit();
+                    }
+                    draggedData = null;
+                });
+            });
+        });
+    </script>
     {% endif %}
 </body>
 </html>

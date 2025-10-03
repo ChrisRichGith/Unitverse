@@ -1,5 +1,5 @@
 {% macro render_unit_card(unit, class_icons, action=None, player_gold=None, game=None) %}
-<div class="unit-card" data-unit-id="{{ unit.id }}">
+<div class="unit-card" data-unit-id="{{ unit.id }}" {% if action == 'deploy' %}draggable="true"{% endif %}>
     <div class="unit-card-header">
         <strong>{{ class_icons.get(unit.class_name, '❓') }} {{ unit.class_name }} {% if unit.level %}(Lvl {{ unit.level }}){% endif %}</strong>
     </div>
@@ -38,30 +38,7 @@
             </form>
         {% elif action == 'deploy' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
-            <form action="/deploy_unit/{{ unit.id }}" method="post">
-                {% set ns = namespace(has_empty_slot=false) %}
-                {% for pos, u in game.player1.board.items() %}
-                    {% if u is none %}
-                        {% set ns.has_empty_slot = true %}
-                    {% endif %}
-                {% endfor %}
-
-                {% if ns.has_empty_slot %}
-                    <div class="deploy-options" style="padding: 5px 0;">
-                        {% for pos, u in game.player1.board.items() %}
-                            {% if u is none %}
-                                <label style="display: block; text-align: left; margin: 2px 10px; font-size: 0.9em;">
-                                    <input type="radio" name="slot" value="{{ pos }}" required> Pos: {{ pos.replace(',', ' | ') }}
-                                </label>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                    <button type="submit">Einsetzen</button>
-                {% else %}
-                    <p style="font-size: 0.9em; color: #aaa;">Board ist voll.</p>
-                    <button type="submit" disabled>Einsetzen</button>
-                {% endif %}
-            </form>
+            <p style="font-size: 0.9em; color: #aaa; margin-top: 10px;">Ziehe auf ein Feld, um die Einheit einzusetzen.</p>
         {% elif action == 'upgrade' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
             {% if unit.xp >= unit.level * 100 %}
