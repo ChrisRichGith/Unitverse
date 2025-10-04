@@ -3,7 +3,6 @@ import json
 import os
 from flask import Flask, render_template, redirect, url_for, request, flash, session
 import random
-
 # --- DATA CLASSES ---
 
 class Unit:
@@ -430,7 +429,8 @@ def start_combat():
                 ai_player.board[slot] = unit_to_buy
             else: break
 
-    is_quick_combat = request.form.get('quick_combat') == 'true'
+    combat_type = request.form.get('combat_type')
+    is_quick_combat = combat_type == 'quick'
     if is_quick_combat:
         game.resolve_combat_instantly()
         session['show_animation'] = False
@@ -445,9 +445,8 @@ def start_combat():
 @app.route('/combat_results')
 def combat_results():
     game = get_game_from_session()
-    if game.game_state != "finished":
-         return redirect(url_for('index'))
-
+    # The check `if game.game_state != "finished":` was too strict and caused a redirect loop.
+    # The page should be accessible as long as the session was populated by /start_combat.
     show_animation = session.get('show_animation', False)
     combat_log_json = json.dumps(game.combat_log)
 

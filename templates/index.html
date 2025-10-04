@@ -226,12 +226,9 @@
                         </div>
                     {% endfor %}{% endfor %}
                 </div>
-                <form action="/start_combat" method="post" style="margin-top: 1em; display: inline-block;">
-                    <button type="submit">Kauf beenden & Kampf starten</button>
-                </form>
-                <form action="/start_combat" method="post" style="margin-top: 1em; display: inline-block;">
-                    <input type="hidden" name="quick_combat" value="true">
-                    <button type="submit" style="background-color: #ffc107; color: black;">Schnellkampf</button>
+                <form action="/start_combat" method="post" style="margin-top: 1em;">
+                    <button type="submit" name="normal_combat" value="1">Kauf beenden & Kampf starten</button>
+                    <button type="submit" name="quick_combat" value="1" style="background-color: #ffc107; color: black;">Schnellkampf</button>
                 </form>
             </div>
         </div>
