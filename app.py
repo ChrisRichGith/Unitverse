@@ -255,27 +255,14 @@ class Game:
 
         if rounds_to_kill_p2 < rounds_to_kill_p1:
             self.winner = self.player1.name
-        elif rounds_to_kill_p1 < rounds_to_kill_p2:
-            self.winner = self.player2.name
-        else:
-            self.winner = "Unentschieden"
-
-        if self.winner == self.player1.name:
             for u in self.player2.units:
                 u.is_defeated = True
-
-            xp_pool = sum(u.cost for u in self.player2.units)
-            surviving_units = [u for u in self.player1.units if not u.is_defeated]
-            if surviving_units:
-                xp_per_survivor = xp_pool // len(surviving_units)
-                barracks_ids = {u.id for u in self.player1.barracks}
-                for unit in surviving_units:
-                    unit.add_xp(xp_per_survivor)
-                    unit.is_in_barracks = unit.id in barracks_ids
-                    self.survivors.append(unit)
-        elif self.winner == self.player2.name:
+        elif rounds_to_kill_p1 < rounds_to_kill_p2:
+            self.winner = self.player2.name
             for u in self.player1.units:
                 u.is_defeated = True
+        else:
+            self.winner = "Unentschieden"
 
         self.combat_log.append({'type': 'quick_combat_result', 'winner': self.winner})
 
@@ -298,9 +285,7 @@ def load_data():
     try:
         with open(SAVE_FILE, "r") as f:
             data = json.load(f)
-            player = Player(name=data.get("name", "Spieler 1"))
-            player.barracks = [Unit.from_dict(u_data) for u_data in data.get("barracks", []) if u_data]
-            return player
+            return Player.from_dict(data)
     except (json.JSONDecodeError, KeyError): return None
 
 app = Flask(__name__)
@@ -433,6 +418,7 @@ def start_combat():
     is_quick_combat = combat_type == 'quick'
     if is_quick_combat:
         game.resolve_combat_instantly()
+        game.determine_winner() # Centralize winner determination
         session['show_animation'] = False
     else:
         game.run_full_combat()
@@ -522,6 +508,7 @@ def rename_unit(unit_id):
         save_data(player_data)
 
     return redirect(url_for('barracks'))
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
