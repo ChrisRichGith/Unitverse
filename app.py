@@ -526,6 +526,45 @@ def move_to_barracks(unit_id):
 
     return redirect(url_for('combat_results'))
 
+@app.route('/move_survivors_to_barracks', methods=['POST'])
+def move_survivors_to_barracks():
+    game = get_game_from_session()
+    player_data = load_data() or Player(name="Spieler 1")
+
+    survivor_ids_json = request.form.get('survivor_ids')
+    if not survivor_ids_json:
+        return redirect(url_for('combat_results'))
+
+    survivor_ids = json.loads(survivor_ids_json)
+    moved_count = 0
+
+    for unit_id in survivor_ids:
+        survivor = next((u for u in game.survivors if u.id == unit_id), None)
+        if survivor:
+            if len(player_data.barracks) < 3:
+                is_existing = any(u.id == survivor.id for u in player_data.barracks)
+                if is_existing:
+                    for i, u in enumerate(player_data.barracks):
+                        if u.id == survivor.id:
+                            player_data.barracks[i] = survivor
+                            break
+                else:
+                    player_data.barracks.append(survivor)
+
+                game.survivors = [s for s in game.survivors if s.id != unit_id]
+                moved_count += 1
+            else:
+                flash("Die Kaserne ist voll! Einige Einheiten konnten nicht verschoben werden.", "error")
+                break
+
+    if moved_count > 0:
+        flash(f"{moved_count} Einheit(en) in die Kaserne verschoben.", "success")
+
+    save_data(player_data)
+    save_game_to_session(game)
+
+    return redirect(url_for('combat_results'))
+
 @app.route('/level_up_unit/<unit_id>', methods=['POST'])
 def level_up_unit(unit_id):
     player_data = load_data()

@@ -142,7 +142,7 @@
                     <div class="board" id="opponent-board">
                         {% for r in range(2) %}{% for c in range(3) %}
                             {% set unit = game.player2.board.get(r ~ ',' ~ c) %}
-                            <div class="unit-slot" id="{{ unit.id if unit else '' }}">
+                            <div class="unit-slot" id="{{ unit.id if unit else '' }}" {% if unit %}data-testid="unit-slot-{{ unit.id }}"{% endif %}>
                                 {% if unit %}
                                     {{ render_unit_card(unit, class_icons, action='combat') }}
                                 {% endif %}
@@ -156,7 +156,7 @@
                     <div class="board" id="player1-board">
                         {% for r in range(2) %}{% for c in range(3) %}
                             {% set unit = game.player1.board.get(r ~ ',' ~ c) %}
-                            <div class="unit-slot" id="{{ unit.id if unit else '' }}">
+                            <div class="unit-slot" id="{{ unit.id if unit else '' }}" {% if unit %}data-testid="unit-slot-{{ unit.id }}"{% endif %}>
                                 {% if unit %}
                                     {{ render_unit_card(unit, class_icons, action='combat') }}
                                 {% endif %}
@@ -186,6 +186,10 @@
             <p>Klicke auf deine überlebenden Einheiten, um sie in die Kaserne zu schicken.</p>
         {% endif %}
         <div class="results-actions" style="margin-top: 1em;">
+            <form action="{{ url_for('move_survivors_to_barracks') }}" method="post" style="display: inline;">
+                <input type="hidden" name="survivor_ids" id="survivor-ids-input">
+                <button type="submit" id="move-selected-btn" style="display: none; background-color: #28a745;" data-testid="move-selected-button">Ausgewählte in Kaserne verschieben</button>
+            </form>
             <a href="{{ url_for('barracks') }}"><button style="background-color: #6c757d; color: white;">Zur Kaserne</button></a>
             <form action="{{ url_for('start_game') }}" method="post" style="display: inline;">
                 <button type="submit">Nächste Runde</button>
@@ -257,22 +261,57 @@
             function showResults() {
                 document.getElementById('results-area').style.display = 'block';
 
+                const selectedSurvivorIds = new Set();
+                const moveButton = document.getElementById('move-selected-btn');
+                const hiddenIdsInput = document.getElementById('survivor-ids-input');
+
+                function updateMoveButton() {
+                    if (selectedSurvivorIds.size > 0) {
+                        moveButton.style.display = 'inline-block';
+                        const idsArray = Array.from(selectedSurvivorIds);
+                        hiddenIdsInput.value = JSON.stringify(idsArray);
+                    } else {
+                        moveButton.style.display = 'none';
+                    }
+                }
+
                 {% if winner == game.player1.name and survivors %}
                 const survivorIds = {{ survivors|map(attribute='id')|list|tojson }};
                 survivorIds.forEach(unitId => {
                     const unitSlot = document.getElementById(unitId);
                     if (unitSlot) {
                         unitSlot.classList.add('survivor-unit-slot', 'clickable');
+
+                        // Add a visual indicator for selection
+                        const selectionIndicator = document.createElement('div');
+                        selectionIndicator.style.position = 'absolute';
+                        selectionIndicator.style.top = '5px';
+                        selectionIndicator.style.right = '5px';
+                        selectionIndicator.style.width = '20px';
+                        selectionIndicator.style.height = '20px';
+                        selectionIndicator.style.borderRadius = '50%';
+                        selectionIndicator.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                        selectionIndicator.style.border = '2px solid #333';
+                        selectionIndicator.style.display = 'none'; // Hidden by default
+                        unitSlot.appendChild(selectionIndicator);
+
                         unitSlot.addEventListener('click', () => {
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = `/move_to_barracks/${unitId}`;
-                            document.body.appendChild(form);
-                            form.submit();
+                            if (selectedSurvivorIds.has(unitId)) {
+                                selectedSurvivorIds.delete(unitId);
+                                unitSlot.style.borderColor = '#28a745'; // Back to default clickable color
+                                selectionIndicator.style.display = 'none';
+                            } else {
+                                selectedSurvivorIds.add(unitId);
+                                unitSlot.style.borderColor = '#00aaff'; // Highlight selected
+                                selectionIndicator.style.display = 'block';
+                                selectionIndicator.style.backgroundColor = '#00aaff';
+                            }
+                            updateMoveButton();
                         });
                     }
                 });
                 {% endif %}
+                updateMoveButton(); // Initial check
             }
 
             async function processNextStep() {
