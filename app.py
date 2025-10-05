@@ -324,6 +324,7 @@ def get_game_from_session():
         game.round_count = game_data.get('round_count', 0)
         game.winner = game_data.get('winner')
         game.survivors = [Unit.from_dict(s) for s in game_data.get('survivors', [])]
+        game.combat_log = game_data.get('combat_log', [])
         return game
     return Game()
 
@@ -336,6 +337,7 @@ def save_game_to_session(game):
         'round_count': game.round_count,
         'winner': game.winner,
         'survivors': [s.to_dict() for s in game.survivors],
+        'combat_log': game.combat_log,
     }
 
 @app.route('/')
