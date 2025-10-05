@@ -4,37 +4,37 @@
     "gold": 100,
     "units": [
         {
-            "id": "hero-unit",
-            "level": 20,
+            "id": "396c568b-9fce-44de-a856-b15397504407",
+            "level": 1,
             "xp": 0,
             "attributes": {
-                "cha": 50,
-                "con": 50,
-                "dex": 50,
-                "int": 50,
-                "str": 50,
-                "wis": 50
+                "cha": 9,
+                "con": 14,
+                "dex": 8,
+                "int": 5,
+                "str": 12,
+                "wis": 10
             },
-            "nickname": "Der Unbesiegbare"
+            "nickname": "TestKrieger"
         }
     ],
     "barracks": [],
     "board": {
-        "0,0": {
-            "id": "hero-unit",
-            "level": 20,
+        "0,0": null,
+        "0,1": {
+            "id": "396c568b-9fce-44de-a856-b15397504407",
+            "level": 1,
             "xp": 0,
             "attributes": {
-                "cha": 50,
-                "con": 50,
-                "dex": 50,
-                "int": 50,
-                "str": 50,
-                "wis": 50
+                "cha": 9,
+                "con": 14,
+                "dex": 8,
+                "int": 5,
+                "str": 12,
+                "wis": 10
             },
-            "nickname": "Der Unbesiegbare"
+            "nickname": "TestKrieger"
         },
-        "0,1": null,
         "0,2": null,
         "1,0": null,
         "1,1": null,

@@ -355,7 +355,13 @@ def start_game():
     game = Game()
     player_data = load_data()
     if player_data:
+        # Load the persistent player data (gold, barracks, etc.)
         game.player1 = player_data
+        # CRITICAL: Reset the transient state for the new round.
+        # The board and active units should always start empty.
+        game.player1.units = []
+        game.player1.board = {f"{r},{c}": None for r in range(2) for c in range(3)}
+
     game.game_state = "preparation"
     game.shop_units = [generate_random_unit() for _ in range(4)]
     save_game_to_session(game)
@@ -388,35 +394,57 @@ def buy_unit(unit_id):
 
 @app.route('/deploy_unit/<unit_id>', methods=['POST'])
 def deploy_unit(unit_id):
+    # 1. Get the current, unified game state from the session.
     game = get_game_from_session()
-    unit_to_deploy = next((u for u in game.player1.barracks if u.id == unit_id), None)
     slot = request.form.get('slot')
-    if unit_to_deploy and not any(u.id == unit_id for u in game.player1.units) and slot and slot in game.player1.board and game.player1.board[slot] is None:
+
+    unit_to_deploy = next((u for u in game.player1.barracks if u.id == unit_id), None)
+    is_already_deployed = any(u.id == unit_id for u in game.player1.units)
+
+    if unit_to_deploy and not is_already_deployed and slot and slot in game.player1.board and game.player1.board[slot] is None:
+        # 2. Modify the game state object directly.
         deployed_unit = Unit.from_dict(unit_to_deploy.to_dict())
         deployed_unit.from_barracks = True
         deployed_unit.position = slot
+
+        # Add to board and active units
         game.player1.units.append(deployed_unit)
         game.player1.board[slot] = deployed_unit
+
+        # Remove from barracks
         game.player1.barracks = [u for u in game.player1.barracks if u.id != unit_id]
+
+        # 3. Save the single, authoritative state to both file and session.
+        save_data(game.player1)
         save_game_to_session(game)
-        save_data(game.player1) # Also save persistent barracks data
+
     return redirect(url_for('index'))
 
 @app.route('/return_to_barracks/<unit_id>', methods=['POST'])
 def return_to_barracks(unit_id):
+    # 1. Get the current, unified game state from the session.
     game = get_game_from_session()
+
     unit_to_return = next((u for u in game.player1.units if u.id == unit_id), None)
+
     if unit_to_return:
+        # 2. Modify the game state object directly.
+
+        # Remove from board and active units
         game.player1.units = [u for u in game.player1.units if u.id != unit_id]
         for pos, unit in game.player1.board.items():
             if unit and unit.id == unit_id:
                 game.player1.board[pos] = None
                 break
+
+        # Add to barracks if it's not already there
         if not any(u.id == unit_id for u in game.player1.barracks):
             game.player1.barracks.append(unit_to_return)
 
+        # 3. Save the single, authoritative state to both file and session.
+        save_data(game.player1)
         save_game_to_session(game)
-        save_data(game.player1) # Also save persistent barracks data
+
     return redirect(url_for('index'))
 
 @app.route('/start_combat', methods=['POST'])
