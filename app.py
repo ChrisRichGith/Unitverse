@@ -465,8 +465,7 @@ def start_combat():
                 ai_player.board[slot] = unit_to_buy
             else: break
 
-    combat_type = request.form.get('combat_type')
-    is_quick_combat = combat_type == 'quick'
+    is_quick_combat = 'quick_combat' in request.form
     if is_quick_combat:
         game.resolve_combat_instantly()
         game.determine_winner() # Centralize winner determination

@@ -132,12 +132,15 @@ button:disabled {
     padding: 0.5em 0.3em;
 }
 .status-effects-container {
-    min-height: 20px;
+    height: 45px;
+    min-height: 45px; /* Enforce a fixed height for consistency */
     display: flex;
     gap: 4px;
     justify-content: center;
     flex-wrap: wrap;
     margin-bottom: 0.5em;
+    overflow-y: auto; /* Add a scrollbar if effects overflow */
+    align-content: flex-start; /* Align content to the top */
 }
 .status-effect {
     padding: 2px 5px;
