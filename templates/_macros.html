@@ -7,7 +7,7 @@
             {% if unit.level %}(Lvl {{ unit.level }}){% endif %}
         </strong>
         {% if unit.nickname %}
-            <small style="display: block; color: #ccc; font-weight: normal;">{{ unit.class_name }}</small>
+            <small class="class-name">{{ unit.class_name }}</small>
         {% endif %}
     </div>
     <div class="health-bar-container">
@@ -45,36 +45,36 @@
             </form>
         {% elif action == 'deploy' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
-            <p style="font-size: 0.9em; color: #aaa; margin-top: 10px;">Ziehe auf ein Feld, um die Einheit einzusetzen.</p>
+            <p class="deploy-text">Ziehe auf ein Feld, um die Einheit einzusetzen.</p>
         {% elif action == 'upgrade' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
             {% if unit.xp >= unit.level * 100 %}
-            <form action="/level_up_unit/{{ unit.id }}" method="post" style="margin-bottom: 5px;">
-                <button type="submit" style="background-color: #ffc107; color: #000;">Level Up!</button>
+            <form action="/level_up_unit/{{ unit.id }}" method="post" class="level-up-form">
+                <button type="submit" class="level-up-button">Level Up!</button>
             </form>
             {% endif %}
             <form action="/rename_unit/{{ unit.id }}" method="post">
-                <input type="text" name="nickname" placeholder="Spitzname" value="{{ unit.nickname or '' }}" style="width: calc(100% - 12px); padding: 5px; margin-bottom: 5px; border-radius: 3px; border: 1px solid #777; background-color: #333; color: #eee;">
+                <input type="text" name="nickname" placeholder="Spitzname" value="{{ unit.nickname or '' }}" class="nickname-input">
                 <button type="submit">Umbenennen</button>
             </form>
         {% elif action == 'board' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
             {% if unit.from_barracks %}
-                <form action="{{ url_for('return_to_barracks', unit_id=unit.id) }}" method="post" style="margin-top: 5px;">
-                    <button type="submit" class="return-button" style="font-size: 0.8em; padding: 0.3em 0.5em; background-color: #6c757d;">Zurück</button>
+                <form action="{{ url_for('return_to_barracks', unit_id=unit.id) }}" method="post" class="return-form">
+                    <button type="submit" class="return-button">Zurück</button>
                 </form>
             {% endif %}
         {% elif action == 'combat' %}
-             <div class="shield-display" style="color: #48cae4; font-weight: bold;"></div>
+             <div class="shield-display"></div>
         {% elif action == 'survivor' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
             {% if unit.is_in_barracks %}
-                <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
-                    <button type="submit" style="background-color: #28a745;">XP Aktualisieren</button>
+                <form action="/move_to_barracks/{{ unit.id }}" method="post" class="survivor-form">
+                    <button type="submit" class="xp-update-button">XP Aktualisieren</button>
                 </form>
             {% else %}
                 {% if game.player1.barracks|length >= 3 %}
-                    <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: flex; flex-direction: column; gap: 0.5em;">
+                    <form action="/move_to_barracks/{{ unit.id }}" method="post" class="survivor-form-replace">
                         <select name="replace_id" class="replace-select">
                             <option value="" disabled selected>Ersetzen...</option>
                             {% for barracks_unit in game.player1.barracks %}
@@ -84,7 +84,7 @@
                         <button type="submit">Bestätigen</button>
                     </form>
                 {% else %}
-                    <form action="/move_to_barracks/{{ unit.id }}" method="post" style="display: inline;">
+                    <form action="/move_to_barracks/{{ unit.id }}" method="post" class="survivor-form">
                         <button type="submit">In Kaserne</button>
                     </form>
                 {% endif %}
