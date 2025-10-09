@@ -15,7 +15,7 @@
             <form action="/start_game" method="post" style="display: inline;">
                 <button type="submit">Nächste Runde</button>
             </form>
-            <form action="/new_game" method="post" style="display: inline;">
+            <form action="/new_game" method="post" style="display: inline;" onsubmit="return confirm('Bist du sicher, dass du ein neues Spiel starten möchtest? Dein gesamter Fortschritt wird gelöscht.');">
                 <button type="submit" style="background-color: #6c757d;">Neues Spiel</button>
             </form>
         {% else %}
