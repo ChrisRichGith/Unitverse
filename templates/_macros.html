@@ -49,7 +49,7 @@
         {% elif action == 'upgrade' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
             {% if unit.xp >= unit.level * 100 %}
-            <form action="/level_up_unit/{{ unit.id }}" method="post" class="level-up-form">
+            <form action="{{ url_for('level_up_unit', unit_id=unit.id) }}" method="post" class="level-up-form">
                 <button type="submit" class="level-up-button">Level Up!</button>
             </form>
             {% endif %}
@@ -59,12 +59,13 @@
             </form>
         {% elif action == 'board' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>
+            <a href="{{ url_for('skill_selection', unit_id=unit.id) }}" class="skill-button">Fähigkeiten</a>
             {% if unit.from_barracks %}
                 <form action="{{ url_for('return_to_barracks', unit_id=unit.id) }}" method="post" class="return-form">
                     <button type="submit" class="return-button">Zurück</button>
                 </form>
             {% endif %}
-        {% elif action == 'combat' %}
+        {% elif action == 'combat' or action == 'preview' %}
              <div class="shield-display"></div>
         {% elif action == 'survivor' %}
             <div class="xp">XP: {{ unit.xp }} / {{ unit.level * 100 }}</div>

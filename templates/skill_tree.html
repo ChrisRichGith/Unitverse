@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Level Up! - Skilltree</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            padding: 2em;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: rgba(37, 37, 37, 0.9);
+            padding: 2em;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .skill-tree {
+            display: flex;
+            justify-content: center;
+            gap: 2em;
+            margin-top: 2em;
+        }
+        .skill-card {
+            background: #333;
+            border: 1px solid #555;
+            padding: 1.5em;
+            border-radius: 8px;
+            width: 200px;
+            text-align: left;
+        }
+        .skill-card h4 {
+            margin-top: 0;
+            color: #00c3ff;
+        }
+        .skill-card a {
+            display: inline-block;
+            margin-top: 1em;
+            padding: 0.5em 1em;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Level Up: {{ unit.nickname or unit.class_name }}!</h2>
+        <p>Wähle eine neue Fähigkeit, die du freischalten möchtest.</p>
+        <div class="skill-tree">
+            {% for skill in available_skills %}
+            <div class="skill-card">
+                <h4>{{ skill.name }}</h4>
+                <p>{{ skill.description }}</p>
+                <a href="{{ url_for('unlock_skill', unit_id=unit.id, skill_id=skill.id) }}">Freischalten</a>
+            </div>
+            {% else %}
+            <p>Keine neuen Fähigkeiten verfügbar.</p>
+            <a href="{{ url_for('barracks') }}">Zurück zur Kaserne</a>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

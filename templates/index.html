@@ -42,7 +42,17 @@
             <div class="team-panel">
                 <h2>Gegner</h2>
                 <div class="board" id="opponent-board">
-                    {% for r in range(2) %}{% for c in range(3) %}<div class="slot">(Leer)</div>{% endfor %}{% endfor %}
+                    {% for r in range(2) %}{% for c in range(3) %}
+                        {% set slot_id = r ~ ',' ~ c %}
+                        {% set unit = game.player2.board.get(slot_id) %}
+                        <div class="slot">
+                        {% if unit %}
+                            {{ render_unit_card(unit, class_icons, action='preview') }}
+                        {% else %}
+                            (Leer)
+                        {% endif %}
+                        </div>
+                    {% endfor %}{% endfor %}
                 </div>
             </div>
             <div class="team-panel">

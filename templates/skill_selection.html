@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Fähigkeiten auswählen</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            padding: 2em;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: rgba(37, 37, 37, 0.9);
+            padding: 2em;
+            border-radius: 8px;
+        }
+        .skill-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .skill-item {
+            background: #333;
+            border: 1px solid #555;
+            padding: 1em;
+            margin-bottom: 1em;
+            border-radius: 5px;
+        }
+        .skill-item h4 {
+            margin-top: 0;
+            color: #00c3ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Fähigkeiten für {{ unit.nickname or unit.class_name }}</h2>
+        <form action="{{ url_for('skill_selection', unit_id=unit.id) }}" method="post">
+            <ul class="skill-list">
+                {% for skill in unit.unlocked_skills %}
+                <li class="skill-item">
+                    <label>
+                        <input type="checkbox" name="active_skills" value="{{ skill.id }}"
+                               {% if skill in unit.active_skills %}checked{% endif %}>
+                        <h4>{{ skill.name }}</h4>
+                        <p>{{ skill.description }}</p>
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+            <button type="submit">Auswahl speichern</button>
+            <a href="{{ url_for('index') }}" style="color: #aaa; margin-left: 1em;">Zurück</a>
+        </form>
+    </div>
+</body>
+</html>

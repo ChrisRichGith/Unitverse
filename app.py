@@ -13,13 +13,15 @@ class Unit:
         self.attributes = attributes
         self.nickname = nickname
         self.from_barracks = False
-        self.recalculate_stats()
         self.is_defeated = False
         self.is_hidden = False
         self.position = None
         self.shield = 0
         self.status_effects = []
         self.ability_cooldown = 0
+        self.unlocked_skills = []
+        self.active_skills = []
+        self.recalculate_stats()
 
     def recalculate_stats(self):
         """Recalculates derived stats after an attribute change."""
@@ -37,6 +39,11 @@ class Unit:
         elif self.class_name in ['Magier', 'Kleriker', 'Barde']: self.attack = 5 + self.attributes.get('int', 0)
         else: self.attack = 5
         self.cost = sum(self.attributes.values()) // 2
+
+        # Assign base skills on creation/recalculation
+        if not self.unlocked_skills: # Only assign if skills are not already present
+            self.unlocked_skills = [skill for skill in SKILLS.get(self.class_name, []) if skill.get('base', False)]
+            self.active_skills = self.unlocked_skills[:2] # Auto-equip first two base skills
 
     def add_xp(self, amount):
         """Adds XP to the unit."""
@@ -59,13 +66,37 @@ class Unit:
         return leveled_up
 
     def to_dict(self):
-        return { "id": self.id, "level": self.level, "xp": self.xp, "attributes": self.attributes, "nickname": self.nickname }
+        return {
+            "id": self.id,
+            "level": self.level,
+            "xp": self.xp,
+            "attributes": self.attributes,
+            "nickname": self.nickname,
+            "unlocked_skills": self.unlocked_skills,
+            "active_skills": self.active_skills
+        }
 
     @classmethod
     def from_dict(cls, data):
         if "attributes" not in data or not data["attributes"]: return None
         unit = Unit(attributes=data.get("attributes"), level=data.get("level", 1), xp=data.get("xp", 0), unit_id=data.get("id"), nickname=data.get("nickname"))
+        unit.unlocked_skills = data.get('unlocked_skills', [])
+        unit.active_skills = data.get('active_skills', [])
         return unit
+
+SKILLS = {
+    "Krieger": [
+        {"id": "k_power_attack", "name": "Mächtiger Schlag", "description": "Ein starker Angriff, der 150% Schaden verursacht.", "base": True},
+        {"id": "k_shield_wall", "name": "Schildwall", "description": "Erhöht die eigene Verteidigung für 2 Runden.", "base": True},
+        {"id": "k_charge", "name": "Ansturm", "description": "Greift den Gegner in der hintersten Reihe an.", "base": False},
+        {"id": "k_last_stand", "name": "Letztes Gefecht", "description": "Überlebt mit 1 HP einen ansonsten tödlichen Treffer.", "base": False}
+    ],
+    "Schurke": [
+        {"id": "s_poison_strike", "name": "Giftiger Stich", "description": "Verursacht Giftschaden über 3 Runden.", "base": True},
+        {"id": "s_evasion", "name": "Ausweichen", "description": "Erhöht die eigene Ausweichchance für 2 Runden.", "base": True}
+    ],
+    # ... (we can add more for other classes later)
+}
 
 class Player:
     def __init__(self, name, is_ai=False):
@@ -144,58 +175,17 @@ class Game:
                 if attacker.is_defeated: continue
                 action_owner = "player1" if attacker in self.player1.units else "player2"
                 self.combat_log.append({'type': 'active_player_turn', 'player_id': action_owner})
-                if attacker.class_name == 'Kleriker' and attacker.ability_cooldown == 0:
-                    allied_player = self.player1 if attacker in self.player1.units else self.player2
-                    heal_candidates = [u for u in allied_player.units if not u.is_defeated and u.hp < u.max_hp]
-                    if heal_candidates:
-                        heal_candidates.sort(key=lambda u: u.hp / u.max_hp)
-                        target = heal_candidates[0]
-                        heal_amount = 5 + attacker.attributes.get('wis', 0)
-                        original_hp = target.hp
-                        target.hp = min(target.max_hp, target.hp + heal_amount)
-                        self.combat_log.append({'type': 'heal', 'healer_id': attacker.id, 'healer_name': attacker.class_name, 'target_id': target.id, 'target_name': target.class_name, 'heal_amount': target.hp - original_hp, 'target_hp_after': target.hp, 'target_max_hp': target.max_hp, 'sound': 'Priest_Healing.mp3', 'player_owner': action_owner})
-                        attacker.ability_cooldown = 2
-                    else: self._perform_standard_attack(attacker)
-                elif attacker.class_name == 'Krieger' and attacker.ability_cooldown == 0:
-                    shield_amount = 10 + attacker.attributes.get('str', 0)
-                    attacker.shield += shield_amount
-                    self.combat_log.append({'type': 'shield', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'shield_amount': shield_amount, 'shield_total': attacker.shield, 'sound': 'Shield_Warrior.mp3', 'player_owner': action_owner})
-                    attacker.ability_cooldown = 3
-                elif attacker.class_name == 'Magier' and attacker.ability_cooldown == 0:
-                    opponent_player = self.player2 if attacker in self.player1.units else self.player1
-                    main_target = next((u for u in opponent_player.units if not u.is_defeated and not u.is_hidden), None)
-                    if main_target:
-                        splash_targets = self._get_adjacent_units(main_target, opponent_player)
-                        all_target_ids = [main_target.id] + [t.id for t in splash_targets if t != main_target and not t.is_defeated and not t.is_hidden]
-                        self.combat_log.append({'type': 'splash_preview', 'attacker_id': attacker.id, 'target_ids': all_target_ids, 'sound': 'Mage_Fireball.mp3', 'player_owner': action_owner})
-                        self._apply_damage(attacker, main_target, attacker.attack)
-                        for splash_target in splash_targets:
-                            if splash_target != main_target and not splash_target.is_defeated and not splash_target.is_hidden:
-                                self._apply_damage(attacker, splash_target, int(attacker.attack * 0.5), is_splash=True)
-                        attacker.ability_cooldown = 2
-                    else: self._perform_standard_attack(attacker)
-                elif attacker.class_name == 'Barde' and attacker.ability_cooldown == 0:
-                    self.combat_log.append({'type': 'battle_song', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Bard_Buff.mp3', 'player_owner': action_owner})
-                    for ally in (self.player1.units if attacker in self.player1.units else self.player2.units):
-                        if not ally.is_defeated and ally.id != attacker.id and not any(e['type'] == 'battle_song' for e in ally.status_effects):
-                            ally.status_effects.append({'type': 'battle_song', 'duration': 3})
-                    attacker.ability_cooldown = 3
-                elif attacker.class_name == 'Schurke':
-                    if attacker.is_hidden:
-                        target = next((u for u in (self.player2.units if attacker in self.player1.units else self.player1.units) if not u.is_defeated and not u.is_hidden), None)
-                        if target: self._apply_damage(attacker, target, int(attacker.attack * 2.0), ignores_shield=True)
-                        attacker.is_hidden = False
-                        self.combat_log.append({'type': 'unhide', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Schurke.mp3', 'player_owner': action_owner})
-                    elif attacker.ability_cooldown == 0:
-                        attacker.is_hidden = True
-                        self.combat_log.append({'type': 'hide', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Rouge_shadow.mp3', 'player_owner': action_owner})
-                        attacker.ability_cooldown = 2
-                    else: self._perform_standard_attack(attacker)
-                elif attacker.class_name == 'Barbar' and attacker.ability_cooldown == 0:
-                    attacker.status_effects.append({'type': 'frenzy', 'duration': 3})
-                    self.combat_log.append({'type': 'frenzy_start', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Barbarian_Warcry.mp3', 'player_owner': action_owner})
-                    attacker.ability_cooldown = 4
-                else: self._perform_standard_attack(attacker)
+                # --- Skill-based Action Logic ---
+                used_skill = False
+                if attacker.ability_cooldown == 0:
+                    for skill in attacker.active_skills:
+                        if self._try_use_skill(attacker, skill):
+                            used_skill = True
+                            break
+
+                if not used_skill:
+                    self._perform_standard_attack(attacker)
+
                 if self.check_game_over(): break
             if self.check_game_over(): break
         self.determine_winner()
@@ -294,6 +284,40 @@ class Game:
         adjacent_positions = [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]
         return [opponent_player.board.get(f"{r_adj},{c_adj}") for r_adj, c_adj in adjacent_positions if opponent_player.board.get(f"{r_adj},{c_adj}")]
 
+    def _try_use_skill(self, attacker, skill):
+        action_owner = "player1" if attacker in self.player1.units else "player2"
+        opponent_player = self.player2 if action_owner == "player1" else self.player1
+
+        if skill['id'] == 'k_power_attack':
+            target = next((u for u in opponent_player.units if not u.is_defeated), None)
+            if target:
+                self.combat_log.append({'type': 'skill_used', 'actor_id': attacker.id, 'skill_name': skill['name'], 'player_owner': action_owner})
+                self._apply_damage(attacker, target, int(attacker.attack * 1.5))
+                attacker.ability_cooldown = 2
+                return True
+        elif skill['id'] == 'k_shield_wall':
+            self.combat_log.append({'type': 'skill_used', 'actor_id': attacker.id, 'skill_name': skill['name'], 'player_owner': action_owner})
+            shield_amount = 10 + attacker.attributes.get('str', 0)
+            attacker.shield += shield_amount
+            self.combat_log.append({'type': 'shield', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'shield_amount': shield_amount, 'shield_total': attacker.shield, 'sound': 'Shield_Warrior.mp3', 'player_owner': action_owner})
+            attacker.ability_cooldown = 3
+            return True
+        elif skill['id'] == 's_poison_strike':
+            target = next((u for u in opponent_player.units if not u.is_defeated), None)
+            if target:
+                self.combat_log.append({'type': 'skill_used', 'actor_id': attacker.id, 'skill_name': skill['name'], 'player_owner': action_owner})
+                target.status_effects.append({'type': 'poison', 'duration': 3, 'damage': 5})
+                self._apply_damage(attacker, target, int(attacker.attack * 0.75)) # Initial damage
+                attacker.ability_cooldown = 2
+                return True
+        elif skill['id'] == 's_evasion':
+            self.combat_log.append({'type': 'skill_used', 'actor_id': attacker.id, 'skill_name': skill['name'], 'player_owner': action_owner})
+            attacker.status_effects.append({'type': 'evasion', 'duration': 2})
+            attacker.ability_cooldown = 3
+            return True
+
+        return False
+
 def generate_random_unit():
     attributes = {'str': random.randint(8, 15), 'dex': random.randint(8, 15), 'con': random.randint(8, 15), 'int': random.randint(8, 15), 'wis': random.randint(8, 15), 'cha': random.randint(8, 15)}
     return Unit(attributes=attributes)
@@ -366,6 +390,21 @@ def start_game():
 
     game.game_state = "preparation"
     game.shop_units = [generate_random_unit() for _ in range(4)]
+
+    # Pre-generate the opponent's team for the preview
+    ai_player = game.player2
+    if not ai_player.units:
+        candidate_units = sorted([generate_random_unit() for _ in range(10)], key=lambda u: u.cost)
+        for unit_to_buy in candidate_units:
+            if len(ai_player.units) >= 6 or ai_player.gold < unit_to_buy.cost: break
+            slot = next((pos for pos, unit in ai_player.board.items() if unit is None), None)
+            if slot:
+                ai_player.gold -= unit_to_buy.cost
+                unit_to_buy.position = slot
+                ai_player.units.append(unit_to_buy)
+                ai_player.board[slot] = unit_to_buy
+            else: break
+
     save_game_to_session(game)
     return redirect(url_for('index'))
 
@@ -452,19 +491,6 @@ def return_to_barracks(unit_id):
 @app.route('/start_combat', methods=['POST'])
 def start_combat():
     game = get_game_from_session()
-    ai_player = game.player2
-    if not ai_player.units:
-        candidate_units = sorted([generate_random_unit() for _ in range(10)], key=lambda u: u.cost)
-        for unit_to_buy in candidate_units:
-            if len(ai_player.units) >= 6 or ai_player.gold < unit_to_buy.cost: break
-            slot = next((pos for pos, unit in ai_player.board.items() if unit is None), None)
-            if slot:
-                ai_player.gold -= unit_to_buy.cost
-                unit_to_buy.position = slot
-                ai_player.units.append(unit_to_buy)
-                ai_player.board[slot] = unit_to_buy
-            else: break
-
     is_quick_combat = 'quick_combat' in request.form
     if is_quick_combat:
         game.resolve_combat_instantly()
@@ -573,13 +599,24 @@ def move_survivors_to_barracks():
 @app.route('/level_up_unit/<unit_id>', methods=['POST'])
 def level_up_unit(unit_id):
     player_data = load_data()
-    if not player_data:
+    unit = next((u for u in player_data.barracks if u.id == unit_id), None)
+    if not unit or unit.xp < unit.level * 100:
         return redirect(url_for('barracks'))
-    unit_to_level_up = next((u for u in player_data.barracks if u.id == unit_id), None)
-    if unit_to_level_up:
-        if unit_to_level_up.level_up_if_possible():
+
+    # This route now initiates the level-up process and then shows the skill tree.
+    # The actual stat changes happen when a skill is unlocked.
+    all_class_skills = SKILLS.get(unit.class_name, [])
+    unlocked_skill_ids = {s['id'] for s in unit.unlocked_skills}
+    available_skills = [s for s in all_class_skills if s['id'] not in unlocked_skill_ids]
+
+    if not available_skills:
+        # If no skills are available, just perform the level-up and redirect.
+        if unit.level_up_if_possible():
             save_data(player_data)
-    return redirect(url_for('barracks'))
+            flash(f"{unit.nickname or unit.class_name} ist aufgestiegen!", "success")
+        return redirect(url_for('barracks'))
+
+    return render_template('skill_tree.html', unit=unit, available_skills=available_skills)
 
 
 @app.route('/barracks')
@@ -604,6 +641,50 @@ def rename_unit(unit_id):
 
     return redirect(url_for('barracks'))
 
+
+@app.route('/unlock_skill/<unit_id>/<skill_id>')
+def unlock_skill(unit_id, skill_id):
+    player_data = load_data()
+    unit = next((u for u in player_data.barracks if u.id == unit_id), None)
+
+    skill_to_unlock = next((s for s_list in SKILLS.values() for s in s_list if s['id'] == skill_id), None)
+
+    if unit and skill_to_unlock:
+        # Perform the level-up
+        unit.level_up_if_possible()
+
+        # Unlock the new skill
+        unit.unlocked_skills.append(skill_to_unlock)
+
+        save_data(player_data)
+        flash(f"Fähigkeit '{skill_to_unlock['name']}' für {unit.nickname or unit.class_name} freigeschaltet!", "success")
+
+    return redirect(url_for('barracks'))
+
+@app.route('/skill_selection/<unit_id>', methods=['GET', 'POST'])
+def skill_selection(unit_id):
+    game = get_game_from_session()
+    unit = next((u for u in game.player1.units if u.id == unit_id), None)
+    if not unit:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        selected_skill_ids = request.form.getlist('active_skills')
+
+        # Limit the number of active skills to 2
+        if len(selected_skill_ids) > 2:
+            flash("Du kannst maximal 2 Fähigkeiten auswählen.", "error")
+            return redirect(url_for('skill_selection', unit_id=unit.id))
+
+        # Find the full skill objects from the unlocked skills
+        selected_skills = [s for s in unit.unlocked_skills if s['id'] in selected_skill_ids]
+        unit.active_skills = selected_skills
+
+        save_game_to_session(game)
+        flash(f"Fähigkeiten für {unit.class_name} gespeichert!", "success")
+        return redirect(url_for('index'))
+
+    return render_template('skill_selection.html', unit=unit, all_skills=SKILLS)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
