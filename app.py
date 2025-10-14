@@ -72,6 +72,7 @@ class Player:
         self.name = name
         self.is_ai = is_ai
         self.gold = 100
+        self.round_count = 0
         self.units = []
         self.barracks = []
         self.board = {f"{r},{c}": None for r in range(2) for c in range(3)}
@@ -81,6 +82,7 @@ class Player:
             "name": self.name,
             "is_ai": self.is_ai,
             "gold": self.gold,
+            "round_count": self.round_count,
             "units": [u.to_dict() for u in self.units],
             "barracks": [u.to_dict() for u in self.barracks],
             "board": {pos: (unit.to_dict() if unit else None) for pos, unit in self.board.items()}
@@ -91,6 +93,7 @@ class Player:
         if not data: return None
         player = Player(name=data.get("name"), is_ai=data.get("is_ai", False))
         player.gold = data.get("gold", 100)
+        player.round_count = data.get("round_count", 0)
         player.units = [Unit.from_dict(u_data) for u_data in data.get("units", []) if u_data]
         player.barracks = [Unit.from_dict(u_data) for u_data in data.get("barracks", []) if u_data]
 
@@ -110,7 +113,6 @@ class Game:
         self.player2 = Player(name="PC", is_ai=True)
         self.game_state = "title_screen"
         self.shop_units = []
-        self.round_count = 0
         self.combat_log = []
         self.winner = None
         self.survivors = []
@@ -142,6 +144,9 @@ class Game:
                         self.combat_log.append({'type': 'effect_end', 'unit_id': unit.id, 'unit_name': unit.class_name, 'effect': effect['type'], 'player_owner': effect_owner})
             for attacker in turn_order:
                 if attacker.is_defeated: continue
+                if any(e['type'] == 'stun' for e in attacker.status_effects):
+                    self.combat_log.append({'type': 'stunned', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'player_owner': "player1" if attacker in self.player1.units else "player2"})
+                    continue
                 action_owner = "player1" if attacker in self.player1.units else "player2"
                 self.combat_log.append({'type': 'active_player_turn', 'player_id': action_owner})
                 if attacker.class_name == 'Kleriker' and attacker.ability_cooldown == 0:
@@ -195,6 +200,16 @@ class Game:
                     attacker.status_effects.append({'type': 'frenzy', 'duration': 3})
                     self.combat_log.append({'type': 'frenzy_start', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Barbarian_Warcry.mp3', 'player_owner': action_owner})
                     attacker.ability_cooldown = 4
+                elif attacker.class_name == 'Golem' and attacker.ability_cooldown == 0:
+                    self.combat_log.append({'type': 'skill_used', 'actor_id': attacker.id, 'skill_name': 'Erdbeben', 'player_owner': action_owner})
+                    opponent_player = self.player1 if attacker in self.player2.units else self.player2
+                    for unit in opponent_player.units:
+                        if not unit.is_defeated:
+                            self._apply_damage(attacker, unit, int(attacker.attack * 0.75), is_splash=True)
+                            if random.random() < 0.25: # 25% chance to stun
+                                unit.status_effects.append({'type': 'stun', 'duration': 1})
+                                self.combat_log.append({'type': 'stun', 'target_id': unit.id, 'target_name': unit.nickname or unit.class_name, 'player_owner': action_owner})
+                    attacker.ability_cooldown = 3
                 else: self._perform_standard_attack(attacker)
                 if self.check_game_over(): break
             if self.check_game_over(): break
@@ -298,6 +313,19 @@ def generate_random_unit():
     attributes = {'str': random.randint(8, 15), 'dex': random.randint(8, 15), 'con': random.randint(8, 15), 'int': random.randint(8, 15), 'wis': random.randint(8, 15), 'cha': random.randint(8, 15)}
     return Unit(attributes=attributes)
 
+def generate_boss_unit():
+    boss_attributes = {'str': 20, 'dex': 10, 'con': 30, 'int': 25, 'wis': 25, 'cha': 20}
+    boss_unit = Unit(attributes=boss_attributes, level=5, nickname="Der Archivar")
+    boss_unit.class_name = "Boss"
+    return boss_unit
+
+def generate_golem_boss():
+    boss_attributes = {'str': 25, 'dex': 5, 'con': 40, 'int': 5, 'wis': 10, 'cha': 5}
+    boss_unit = Unit(attributes=boss_attributes, level=10, nickname="Der Golem aus lebendem Fels")
+    boss_unit.class_name = "Golem"
+    boss_unit.shield = 50
+    return boss_unit
+
 SAVE_FILE = "game_data.json"
 def save_data(player):
     with open(SAVE_FILE, "w") as f: json.dump(player.to_dict(), f, indent=4)
@@ -321,7 +349,6 @@ def get_game_from_session():
         game.player2 = Player.from_dict(game_data.get('player2'))
         game.game_state = game_data.get('game_state', 'title_screen')
         game.shop_units = [Unit.from_dict(u) for u in game_data.get('shop_units', [])]
-        game.round_count = game_data.get('round_count', 0)
         game.winner = game_data.get('winner')
         game.survivors = [Unit.from_dict(s) for s in game_data.get('survivors', [])]
         game.combat_log = game_data.get('combat_log', [])
@@ -334,7 +361,6 @@ def save_game_to_session(game):
         'player2': game.player2.to_dict(),
         'game_state': game.game_state,
         'shop_units': [u.to_dict() for u in game.shop_units],
-        'round_count': game.round_count,
         'winner': game.winner,
         'survivors': [s.to_dict() for s in game.survivors],
         'combat_log': game.combat_log,
@@ -363,6 +389,37 @@ def start_game():
         # The board and active units should always start empty.
         game.player1.units = []
         game.player1.board = {f"{r},{c}": None for r in range(2) for c in range(3)}
+
+    game.player1.round_count += 1
+
+    # Pre-generate the opponent's team for the preview
+    ai_player = game.player2
+    ai_player.units = [] # Clear previous team
+    ai_player.board = {f"{r},{c}": None for r in range(2) for c in range(3)}
+
+    if game.player1.round_count % 10 == 0:
+        boss_unit = generate_golem_boss()
+        boss_unit.position = "0,1"
+        ai_player.units.append(boss_unit)
+        ai_player.board[boss_unit.position] = boss_unit
+    elif game.player1.round_count % 5 == 0:
+        boss_unit = generate_boss_unit()
+        boss_unit.position = "0,1"
+        ai_player.units.append(boss_unit)
+        ai_player.board[boss_unit.position] = boss_unit
+    else:
+        # Normal round
+        if not ai_player.units:
+            candidate_units = sorted([generate_random_unit() for _ in range(10)], key=lambda u: u.cost)
+            for unit_to_buy in candidate_units:
+                if len(ai_player.units) >= 6 or ai_player.gold < unit_to_buy.cost: break
+                slot = next((pos for pos, unit in ai_player.board.items() if unit is None), None)
+                if slot:
+                    ai_player.gold -= unit_to_buy.cost
+                    unit_to_buy.position = slot
+                    ai_player.units.append(unit_to_buy)
+                    ai_player.board[slot] = unit_to_buy
+                else: break
 
     game.game_state = "preparation"
     game.shop_units = [generate_random_unit() for _ in range(4)]
