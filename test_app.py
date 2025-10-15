@@ -46,10 +46,15 @@ class FlaskTestCase(unittest.TestCase):
                 # Check unit is removed from barracks
                 self.assertFalse(any(u['id'] == unit_id for u in player1_data['barracks']))
 
-            # 6. Verify the persistent data is also updated.
-            persistent_player_data = load_data()
-            self.assertFalse(any(u.id == unit_id for u in persistent_player_data.barracks))
-            self.assertEqual(len(persistent_player_data.barracks), 0)
+        # 6. Verify the session state has been updated.
+        with client.session_transaction() as session:
+            game_after_deploy = session.get('game')
+            player1_data = game_after_deploy['player1']
+            # Check unit is on the board
+            self.assertIsNotNone(player1_data['board'][target_slot])
+            self.assertEqual(player1_data['board'][target_slot]['id'], unit_id)
+            # Check unit is removed from barracks
+            self.assertFalse(any(u['id'] == unit_id for u in player1_data['barracks']))
 
     def test_return_unit_to_persistent_barracks(self):
         # 1. Set up an empty persistent state for the barracks.
@@ -91,10 +96,15 @@ class FlaskTestCase(unittest.TestCase):
                 # Check unit is added to the session's barracks
                 self.assertTrue(any(u['id'] == unit_id for u in player1_data['barracks']))
 
-            # 7. Verify the persistent data is also updated.
-            persistent_player_data = load_data()
-            self.assertTrue(any(u.id == unit_id for u in persistent_player_data.barracks))
-            self.assertEqual(len(persistent_player_data.barracks), 1)
+        # 7. Verify the session state.
+        with client.session_transaction() as session:
+            game_after_return = session.get('game')
+            player1_data = game_after_return['player1']
+            # Check unit is removed from board
+            self.assertIsNone(player1_data['board'][slot])
+            self.assertFalse(any(u['id'] == unit_id for u in player1_data['units']))
+            # Check unit is added to the session's barracks
+            self.assertTrue(any(u['id'] == unit_id for u in player1_data['barracks']))
 
 if __name__ == '__main__':
     unittest.main()

@@ -63,8 +63,10 @@
             </small>
         </div>
         <div class="equipment-display" style="font-size: 0.9em; color: #ccc; margin-top: 5px;">
-            <p style="margin: 2px 0;">Waffe: {{ unit.weapon.name if unit.weapon else 'Keine' }}</p>
-            <p style="margin: 2px 0;">Rüstung: {{ unit.armor.name if unit.armor else 'Keine' }}</p>
+            <p style="margin: 2px 0;">🗡️ Haupthand: {{ unit.main_hand.name if unit.main_hand else 'Leer' }}</p>
+            <p style="margin: 2px 0;">🛡️ Nebenhand: {{ unit.off_hand.name if unit.off_hand else 'Leer' }}</p>
+            <p style="margin: 2px 0;">👕 Brust: {{ unit.chest.name if unit.chest else 'Leer' }}</p>
+            <p style="margin: 2px 0;">👖 Beine: {{ unit.legs.name if unit.legs else 'Leer' }}</p>
         </div>
     </div>
     <div class="unit-card-footer">

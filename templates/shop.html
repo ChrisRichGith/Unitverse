@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>Ausrüstungsladen</h1>
-    <p>Gold: {{ player.gold }}</p>
+    <p>Gold: <span id="player-gold">{{ player.gold }}</span></p>
 
     <div class="shop-container">
         <h2>Verfügbare Ausrüstung</h2>
@@ -23,5 +23,29 @@
         <a href="{{ url_for('index') }}"><button>Zurück zum Hauptmenü</button></a>
         <a href="{{ url_for('barracks') }}"><button>Zur Kaserne</button></a>
     </div>
+    <script>
+        document.querySelectorAll('.equipment-card form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                const action = this.action;
+
+                fetch(action, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('player-gold').textContent = data.new_gold;
+                        alert(data.message); // Or use a more sophisticated notification system
+                    } else {
+                        alert('Fehler: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+    </script>
 </body>
 </html>

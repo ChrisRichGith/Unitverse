@@ -38,14 +38,16 @@ class Equipment:
         )
 
 class Unit:
-    def __init__(self, attributes, level=1, xp=0, unit_id=None, nickname=None, weapon=None, armor=None):
+    def __init__(self, attributes, level=1, xp=0, unit_id=None, nickname=None, main_hand=None, off_hand=None, chest=None, legs=None):
         self.id = unit_id if unit_id else str(uuid.uuid4())
         self.level = level
         self.xp = xp
         self.attributes = attributes
         self.nickname = nickname
-        self.weapon = weapon
-        self.armor = armor
+        self.main_hand = main_hand
+        self.off_hand = off_hand
+        self.chest = chest
+        self.legs = legs
         self.from_barracks = False
         self.recalculate_stats()
         self.is_defeated = False
@@ -61,12 +63,11 @@ class Unit:
         current_attributes = self.attributes.copy()
 
         # Add bonuses from equipment
-        if self.weapon and self.weapon.bonuses:
-            for stat, bonus in self.weapon.bonuses.items():
-                current_attributes[stat] = current_attributes.get(stat, 0) + bonus
-        if self.armor and self.armor.bonuses:
-            for stat, bonus in self.armor.bonuses.items():
-                current_attributes[stat] = current_attributes.get(stat, 0) + bonus
+        for slot in ['main_hand', 'off_hand', 'chest', 'legs']:
+            item = getattr(self, slot)
+            if item and item.bonuses:
+                for stat, bonus in item.bonuses.items():
+                    current_attributes[stat] = current_attributes.get(stat, 0) + bonus
 
         primary_stat = max(current_attributes, key=current_attributes.get)
         class_map = {
@@ -110,8 +111,10 @@ class Unit:
             "xp": self.xp,
             "attributes": self.attributes,
             "nickname": self.nickname,
-            "weapon": self.weapon.to_dict() if self.weapon else None,
-            "armor": self.armor.to_dict() if self.armor else None,
+            "main_hand": self.main_hand.to_dict() if self.main_hand else None,
+            "off_hand": self.off_hand.to_dict() if self.off_hand else None,
+            "chest": self.chest.to_dict() if self.chest else None,
+            "legs": self.legs.to_dict() if self.legs else None,
         }
 
     @classmethod
@@ -124,8 +127,10 @@ class Unit:
             xp=data.get("xp", 0),
             unit_id=data.get("id"),
             nickname=data.get("nickname"),
-            weapon=Equipment.from_dict(data.get("weapon")),
-            armor=Equipment.from_dict(data.get("armor")),
+            main_hand=Equipment.from_dict(data.get("main_hand")),
+            off_hand=Equipment.from_dict(data.get("off_hand")),
+            chest=Equipment.from_dict(data.get("chest")),
+            legs=Equipment.from_dict(data.get("legs")),
         )
 
 class Player:
@@ -176,7 +181,6 @@ class Game:
         self.combat_log = []
         self.winner = None
         self.survivors = []
-        self.round_count = 0
 
     def _perform_standard_attack(self, attacker):
         opponent_player = self.player2 if attacker in self.player1.units else self.player1
@@ -192,8 +196,7 @@ class Game:
         for unit in self.player1.units + self.player2.units: unit.ability_cooldown = 0
         turn_order = sorted(self.player1.units + self.player2.units, key=lambda u: u.initiative, reverse=True)
         for i in range(20):
-            self.round_count = i + 1
-            self.combat_log.append({'type': 'round', 'number': self.round_count})
+            self.combat_log.append({'type': 'round', 'number': i + 1})
             for unit in turn_order:
                 if unit.is_defeated: continue
                 if unit.ability_cooldown > 0: unit.ability_cooldown -= 1
@@ -366,7 +369,6 @@ def generate_boss_unit():
     boss_unit.class_name = "Boss"
     return boss_unit
 
-
 SAVE_FILE = "game_data.json"
 def save_data(player):
     with open(SAVE_FILE, "w") as f: json.dump(player.to_dict(), f, indent=4)
@@ -390,7 +392,6 @@ def get_game_from_session():
         game.player2 = Player.from_dict(game_data.get('player2'))
         game.game_state = game_data.get('game_state', 'title_screen')
         game.shop_units = [Unit.from_dict(u) for u in game_data.get('shop_units', [])]
-        game.round_count = game_data.get('round_count', 0)
         game.winner = game_data.get('winner')
         game.survivors = [Unit.from_dict(s) for s in game_data.get('survivors', [])]
         game.combat_log = game_data.get('combat_log', [])
@@ -403,7 +404,6 @@ def save_game_to_session(game):
         'player2': game.player2.to_dict(),
         'game_state': game.game_state,
         'shop_units': [u.to_dict() for u in game.shop_units],
-        'round_count': game.round_count,
         'winner': game.winner,
         'survivors': [s.to_dict() for s in game.survivors],
         'combat_log': game.combat_log,
@@ -473,6 +473,8 @@ def start_game():
 
     game.game_state = "preparation"
     game.shop_units = [generate_random_unit() for _ in range(4)]
+    if not game.player1.barracks and not game.player1.units:
+        game.player1.barracks.append(Unit(attributes={'str': 12, 'dex': 8, 'con': 10, 'int': 5, 'wis': 5, 'cha': 5})) # A Warrior
     save_game_to_session(game)
     return redirect(url_for('tavern'))
 
@@ -523,8 +525,7 @@ def deploy_unit(unit_id):
         # Remove from barracks
         game.player1.barracks = [u for u in game.player1.barracks if u.id != unit_id]
 
-        # 3. Save the single, authoritative state to both file and session.
-        save_data(game.player1)
+        # 3. Save the authoritative state to the session.
         save_game_to_session(game)
 
     return redirect(url_for('index'))
@@ -550,8 +551,7 @@ def return_to_barracks(unit_id):
         if not any(u.id == unit_id for u in game.player1.barracks):
             game.player1.barracks.append(unit_to_return)
 
-        # 3. Save the single, authoritative state to both file and session.
-        save_data(game.player1)
+        # 3. Save the authoritative state to the session.
         save_game_to_session(game)
 
     return redirect(url_for('index'))
@@ -634,7 +634,8 @@ def move_to_barracks(unit_id):
             return redirect(url_for('combat_results'))
 
         game.survivors = [s for s in game.survivors if s.id != unit_id]
-        save_data(player_data)
+        game.player1 = player_data
+        save_data(game.player1)
         save_game_to_session(game)
 
     return redirect(url_for('combat_results'))
@@ -673,108 +674,88 @@ def move_survivors_to_barracks():
     if moved_count > 0:
         flash(f"{moved_count} Einheit(en) in die Kaserne verschoben.", "success")
 
-    save_data(player_data)
+    game.player1 = player_data
+    save_data(game.player1)
     save_game_to_session(game)
 
     return redirect(url_for('combat_results'))
 
 @app.route('/level_up_unit/<unit_id>', methods=['POST'])
 def level_up_unit(unit_id):
-    player_data = load_data()
-    if not player_data:
-        return redirect(url_for('barracks'))
-    unit_to_level_up = next((u for u in player_data.barracks if u.id == unit_id), None)
+    game = get_game_from_session()
+    unit_to_level_up = next((u for u in game.player1.barracks if u.id == unit_id), None)
     if unit_to_level_up:
         if unit_to_level_up.level_up_if_possible():
-            save_data(player_data)
+            save_game_to_session(game)
     return redirect(url_for('barracks'))
 
 
 @app.route('/barracks')
 def barracks():
-    player_data = load_data()
-    if not player_data:
-        player_data = Player(name="Spieler 1")
-    return render_template('barracks.html', player=player_data, class_icons=CLASS_ICONS)
+    game = get_game_from_session()
+    return render_template('barracks.html', player=game.player1, class_icons=CLASS_ICONS)
 
 @app.route('/rename_unit/<unit_id>', methods=['POST'])
 def rename_unit(unit_id):
-    player_data = load_data()
-    if not player_data:
-        return redirect(url_for('barracks'))
-
-    unit_to_rename = next((u for u in player_data.barracks if u.id == unit_id), None)
+    game = get_game_from_session()
+    unit_to_rename = next((u for u in game.player1.barracks if u.id == unit_id), None)
 
     if unit_to_rename:
         new_name = request.form.get('nickname')
         unit_to_rename.nickname = new_name
-        save_data(player_data)
+        save_game_to_session(game)
 
     return redirect(url_for('barracks'))
 
 def get_shop_items():
     return [
-        Equipment(name="Rostiges Schwert", equip_type="Waffe", bonuses={"str": 2}, cost=20, allowed_classes=["Krieger", "Barbar"]),
-        Equipment(name="Holzschild", equip_type="Rüstung", bonuses={"con": 2}, cost=20, allowed_classes=["Krieger", "Barbar", "Kleriker"]),
-        Equipment(name="Stab des Anfängers", equip_type="Waffe", bonuses={"int": 2}, cost=20, allowed_classes=["Magier", "Kleriker", "Barde"]),
-        Equipment(name="Lederrüstung", equip_type="Rüstung", bonuses={"dex": 2}, cost=20, allowed_classes=["Schurke", "Barde"]),
+        Equipment(name="Kurzschwert", equip_type="main_hand", bonuses={"str": 3}, cost=25, allowed_classes=["Krieger", "Schurke", "Barde"]),
+        Equipment(name="Rundschild", equip_type="off_hand", bonuses={"con": 3}, cost=25, allowed_classes=["Krieger", "Kleriker"]),
+        Equipment(name="Lederwams", equip_type="chest", bonuses={"dex": 2, "con": 1}, cost=30, allowed_classes=["Schurke", "Barde"]),
+        Equipment(name="Eisenstiefel", equip_type="legs", bonuses={"con": 2}, cost=20, allowed_classes=["Krieger", "Barbar", "Kleriker"]),
+        Equipment(name="Zauberstab", equip_type="main_hand", bonuses={"int": 3}, cost=25, allowed_classes=["Magier", "Kleriker"]),
+        Equipment(name="Stoffhose", equip_type="legs", bonuses={"int": 1, "wis": 1}, cost=15, allowed_classes=["Magier", "Kleriker", "Barde"]),
     ]
 
 @app.route('/shop')
 def shop():
-    player_data = load_data()
-    if not player_data:
-        player_data = Player(name="Spieler 1")
-        # For testing, create a default unit if none exist
-        if not player_data.barracks and not player_data.units:
-            player_data.barracks.append(Unit(attributes={'str': 12, 'dex': 8, 'con': 10, 'int': 5, 'wis': 5, 'cha': 5})) # A Warrior
-            save_data(player_data)
+    game = get_game_from_session()
+    if game.game_state != "preparation":
+        return redirect(url_for('index'))
 
     shop_items = get_shop_items()
-    return render_template('shop.html', player=player_data, shop_items=shop_items)
+    return render_template('shop.html', player=game.player1, shop_items=shop_items)
 
 @app.route('/buy_equipment/<item_id>', methods=['POST'])
 def buy_equipment(item_id):
-    player_data = load_data()
-    if not player_data:
-        return redirect(url_for('shop'))
+    game = get_game_from_session()
+    if game.game_state != "preparation":
+        return {"success": False, "message": "Das Spiel befindet sich nicht in der Vorbereitungsphase."}
 
     unit_id = request.form.get('unit_id')
     shop_items = get_shop_items()
     item_to_buy = next((item for item in shop_items if item.id == item_id), None)
 
-    # Combine barracks and board units for equipping
-    all_player_units = player_data.barracks + player_data.units
+    all_player_units = game.player1.barracks + game.player1.units
     unit_to_equip = next((unit for unit in all_player_units if unit.id == unit_id), None)
 
     if not item_to_buy:
-        flash("Gegenstand nicht gefunden!", "error")
-        return redirect(url_for('shop'))
-
+        return {"success": False, "message": "Gegenstand nicht gefunden."}
     if not unit_to_equip:
-        flash("Einheit nicht gefunden!", "error")
-        return redirect(url_for('shop'))
-
-    if player_data.gold < item_to_buy.cost:
-        flash("Nicht genug Gold!", "error")
-        return redirect(url_for('shop'))
-
+        return {"success": False, "message": "Einheit nicht gefunden."}
+    if game.player1.gold < item_to_buy.cost:
+        return {"success": False, "message": "Nicht genug Gold."}
     if unit_to_equip.class_name not in item_to_buy.allowed_classes:
-        flash(f"Diese Ausrüstung kann nicht von einem '{unit_to_equip.class_name}' getragen werden.", "error")
-        return redirect(url_for('shop'))
+        return {"success": False, "message": f"Diese Ausrüstung kann nicht von einem '{unit_to_equip.class_name}' getragen werden."}
 
-    # Equip the item directly
-    if item_to_buy.type == 'Waffe':
-        unit_to_equip.weapon = item_to_buy
-    elif item_to_buy.type == 'Rüstung':
-        unit_to_equip.armor = item_to_buy
+    # Equip the item directly based on its type
+    setattr(unit_to_equip, item_to_buy.type, item_to_buy)
 
-    player_data.gold -= item_to_buy.cost
+    game.player1.gold -= item_to_buy.cost
     unit_to_equip.recalculate_stats()
-    save_data(player_data)
-    flash(f"'{item_to_buy.name}' an '{unit_to_equip.nickname or unit_to_equip.class_name}' ausgerüstet.", "success")
+    save_game_to_session(game)
 
-    return redirect(url_for('shop'))
+    return {"success": True, "message": f"'{item_to_buy.name}' ausgerüstet.", "new_gold": game.player1.gold}
 
 
 if __name__ == '__main__':
