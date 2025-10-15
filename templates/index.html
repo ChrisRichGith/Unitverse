@@ -184,9 +184,7 @@
     </div>
     <div class="bottom-menu">
         {% if save_exists %}
-            <form action="/start_game" method="post" style="display: inline;">
-                <button type="submit">Nächste Runde</button>
-            </form>
+            <a href="{{ url_for('tavern') }}"><button>Taverne</button></a>
             <form action="/new_game" method="post" style="display: inline;">
                 <button type="submit" style="background-color: #6c757d;">Neues Spiel</button>
             </form>
@@ -196,7 +194,7 @@
             </form>
         {% endif %}
         <a href="{{ url_for('barracks') }}"><button>Kaserne</button></a>
-        <a href="{{ url_for('shop') }}"><button>Laden</button></a>
+        <a href="{{ url_for('shop') }}"><button>Ausrüstungsladen</button></a>
     </div>
     {% elif game.game_state == 'preparation' %}
     <div class="prep-container">
@@ -243,9 +241,9 @@
 
         <div class="side-panel">
             <h3>Taverne</h3>
-            {% for unit in game.shop_units %}
-                {{ render_unit_card(unit, class_icons, action='buy', player_gold=game.player1.gold) }}
-            {% endfor %}
+            <div class="navigation">
+                <a href="{{ url_for('tavern') }}"><button>Söldner anheuern</button></a>
+            </div>
         </div>
     </div>
     <form id="deploy-form" action="" method="post" style="display: none;">

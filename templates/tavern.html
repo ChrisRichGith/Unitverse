@@ -1,26 +1,27 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    {% from "_macros.html" import render_unit_card, render_equipment_card %}
+    {% from "_macros.html" import render_unit_card %}
     <meta charset="UTF-8">
-    <title>Ausrüstungsladen</title>
+    <title>Taverne</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Ausrüstungsladen</h1>
+    <h1>Taverne</h1>
     <p>Gold: {{ player.gold }}</p>
 
     <div class="shop-container">
-        <h2>Verfügbare Ausrüstung</h2>
-        <div class="equipment-list">
-            {% for item in shop_items %}
-                {{ render_equipment_card(item, action='buy', player_gold=player.gold, player=player) }}
+        <h2>Söldner anheuern</h2>
+        <div class="unit-list">
+            {% for unit in shop_units %}
+                {{ render_unit_card(unit, class_icons, action='buy', player_gold=player.gold) }}
             {% endfor %}
         </div>
     </div>
 
     <div class="navigation">
         <a href="{{ url_for('index') }}"><button>Zurück zum Hauptmenü</button></a>
+        <a href="{{ url_for('shop') }}"><button>Zum Ausrüstungsladen</button></a>
         <a href="{{ url_for('barracks') }}"><button>Zur Kaserne</button></a>
     </div>
 </body>

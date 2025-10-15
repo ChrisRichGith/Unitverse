@@ -258,38 +258,11 @@ class Game:
                     attacker.status_effects.append({'type': 'frenzy', 'duration': 3})
                     self.combat_log.append({'type': 'frenzy_start', 'actor_id': attacker.id, 'actor_name': attacker.class_name, 'sound': 'Barbarian_Warcry.mp3', 'player_owner': action_owner})
                     attacker.ability_cooldown = 4
-                elif attacker.class_name == 'Shadow_Queen' and attacker.ability_cooldown == 0:
-                    if random.random() < 0.5: # 50% chance to use Spiegelbild
-                        empty_slot = next((pos for pos, unit in self.player2.board.items() if unit is None), None)
-                        if empty_slot:
-                            self.combat_log.append({'type': 'skill_used', 'actor_id': attacker.id, 'skill_name': 'Spiegelbild', 'player_owner': action_owner})
-                            clone = Unit.from_dict(attacker.to_dict())
-                            clone.hp = int(clone.max_hp * 0.5)
-                            clone.is_clone = True
-                            clone.position = empty_slot
-                            self.player2.units.append(clone)
-                            self.player2.board[empty_slot] = clone
-                            self.combat_log.append({'type': 'summon', 'actor_id': attacker.id, 'summoned_id': clone.id, 'summoned_name': clone.nickname or clone.class_name, 'player_owner': action_owner})
-                            attacker.ability_cooldown = 4
-                        else:
-                            self._perform_standard_attack(attacker)
-                    else:
-                        target = next((u for u in self.player1.units if not u.is_defeated), None)
-                        if target:
-                            self.combat_log.append({'type': 'skill_used', 'actor_id': attacker.id, 'skill_name': 'Schattenstich', 'player_owner': action_owner})
-                            self._apply_damage(attacker, target, attacker.attack, ignores_shield=True)
-                            attacker.ability_cooldown = 2
-                        else:
-                            self._perform_standard_attack(attacker)
                 else: self._perform_standard_attack(attacker)
                 if self.check_game_over(): break
             if self.check_game_over(): break
         self.determine_winner()
     def _apply_damage(self, attacker, target, damage, is_splash=False, ignores_shield=False, sound=None):
-        if target.class_name == 'Shadow_Queen' and random.random() < 0.3: # 30% chance to evade
-            self.combat_log.append({'type': 'evade', 'target_id': target.id, 'target_name': target.nickname or target.class_name, 'player_owner': "player1" if target in self.player1.units else "player2"})
-            return
-
         if any(e['type'] == 'frenzy' for e in attacker.status_effects): damage = int(damage * 1.5)
         if any(e['type'] == 'battle_song' for e in attacker.status_effects): damage = int(damage * 1.25)
         if not ignores_shield:
@@ -393,18 +366,6 @@ def generate_boss_unit():
     boss_unit.class_name = "Boss"
     return boss_unit
 
-def generate_golem_boss():
-    boss_attributes = {'str': 25, 'dex': 5, 'con': 40, 'int': 5, 'wis': 10, 'cha': 5}
-    boss_unit = Unit(attributes=boss_attributes, level=10, nickname="Der Golem aus lebendem Fels")
-    boss_unit.class_name = "Golem"
-    boss_unit.shield = 50
-    return boss_unit
-
-def generate_shadow_queen_boss():
-    boss_attributes = {'str': 15, 'dex': 30, 'con': 20, 'int': 15, 'wis': 10, 'cha': 25}
-    boss_unit = Unit(attributes=boss_attributes, level=15, nickname="Die Schattenkönigin")
-    boss_unit.class_name = "Shadow_Queen"
-    return boss_unit
 
 SAVE_FILE = "game_data.json"
 def save_data(player):
@@ -461,6 +422,17 @@ def index():
     save_exists = os.path.exists(SAVE_FILE)
     return render_template('index.html', game=game, save_exists=save_exists, class_icons=CLASS_ICONS)
 
+@app.route('/tavern')
+def tavern():
+    game = get_game_from_session()
+    if game.game_state != "preparation":
+        return redirect(url_for('index'))
+
+    return render_template('tavern.html',
+                           player=game.player1,
+                           shop_units=game.shop_units,
+                           class_icons=CLASS_ICONS)
+
 @app.route('/start_game', methods=['POST'])
 def start_game():
     game = Game()
@@ -480,17 +452,7 @@ def start_game():
     ai_player.units = [] # Clear previous team
     ai_player.board = {f"{r},{c}": None for r in range(2) for c in range(3)}
 
-    if game.player1.round_count % 15 == 0:
-        boss_unit = generate_shadow_queen_boss()
-        boss_unit.position = "0,1"
-        ai_player.units.append(boss_unit)
-        ai_player.board[boss_unit.position] = boss_unit
-    elif game.player1.round_count % 10 == 0:
-        boss_unit = generate_golem_boss()
-        boss_unit.position = "0,1"
-        ai_player.units.append(boss_unit)
-        ai_player.board[boss_unit.position] = boss_unit
-    elif game.player1.round_count % 5 == 0:
+    if game.player1.round_count % 5 == 0:
         boss_unit = generate_boss_unit()
         boss_unit.position = "0,1"
         ai_player.units.append(boss_unit)
@@ -512,7 +474,7 @@ def start_game():
     game.game_state = "preparation"
     game.shop_units = [generate_random_unit() for _ in range(4)]
     save_game_to_session(game)
-    return redirect(url_for('index'))
+    return redirect(url_for('tavern'))
 
 @app.route('/new_game', methods=['POST'])
 def new_game():

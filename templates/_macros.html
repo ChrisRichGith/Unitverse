@@ -1,4 +1,4 @@
-{% macro render_equipment_card(item, action=None, player_gold=None) %}
+{% macro render_equipment_card(item, action=None, player_gold=None, player=None) %}
     <div class="unit-card equipment-card">
         <div class="unit-card-header">
             <strong>{{ item.name }}</strong>
@@ -13,7 +13,7 @@
         </div>
         <div class="unit-card-footer">
             <p class="cost">Preis: {{ item.cost }} Gold</p>
-            {% if action == 'buy' %}
+            {% if action == 'buy' and player %}
                 <form action="{{ url_for('buy_equipment', item_id=item.id) }}" method="post">
                     {% set eligible_units = [] %}
                     {% for unit in player.barracks + player.units %}
